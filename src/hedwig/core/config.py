@@ -17,7 +17,16 @@ class SecurityConfig(BaseModel):
     """Security-related configuration."""
     
     confirmation_timeout: int = Field(default=10, description="Timeout for security confirmations in seconds")
+    confirmation_timeout_seconds: int = Field(default=10, description="Alias for confirmation_timeout")
     max_retries: int = Field(default=3, description="Maximum number of task retry attempts")
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Ensure both fields have the same value
+        if "confirmation_timeout" in kwargs and "confirmation_timeout_seconds" not in kwargs:
+            self.confirmation_timeout_seconds = self.confirmation_timeout
+        elif "confirmation_timeout_seconds" in kwargs and "confirmation_timeout" not in kwargs:
+            self.confirmation_timeout = self.confirmation_timeout_seconds
     enable_sandbox: bool = Field(default=False, description="Enable sandboxing for execution tools")
     high_risk_patterns: List[str] = Field(
         default_factory=lambda: ["rm", "mv", "dd", "mkfs", "format", "del", "deltree"],

@@ -11,11 +11,34 @@ __author__ = "Hedwig Development Team"
 
 from hedwig.core.models import TaskInput, TaskOutput, ToolOutput, Artifact
 from hedwig.core.artifact_registry import ArtifactRegistry
+from hedwig.tools import (
+    Tool,
+    ToolRegistry,
+    SecurityGateway,
+    get_global_registry,
+    register_tool,
+    get_tool,
+    FileReaderTool,
+    ListArtifactsTool,
+)
 
 __all__ = [
+    # Core models
     "TaskInput",
     "TaskOutput", 
     "ToolOutput",
     "Artifact",
     "ArtifactRegistry",
+    
+    # Tool system
+    "Tool",
+    "ToolRegistry",
+    "SecurityGateway",
+    "get_global_registry",
+    "register_tool",
+    "get_tool",
+    
+    # Basic tools
+    "FileReaderTool",
+    "ListArtifactsTool",
 ]
