@@ -24,6 +24,7 @@ class ErrorCode(str, Enum):
     ARTIFACT_NOT_FOUND = "ARTIFACT_NOT_FOUND"
     INVALID_INPUT = "INVALID_INPUT"
     TIMEOUT_EXCEEDED = "TIMEOUT_EXCEEDED"
+    CONFIGURATION_ERROR = "CONFIGURATION_ERROR"
 
 
 class RiskTier(str, Enum):
@@ -104,7 +105,9 @@ class ToolOutput(BaseModel):
     artifacts: List[Artifact] = Field(default_factory=list, description="List of artifacts created by the tool")
     success: bool = Field(default=True, description="Whether the tool execution succeeded")
     error: Optional[str] = Field(None, description="Error message if execution failed")
+    error_message: Optional[str] = Field(None, description="Alias for error field for compatibility")
     error_code: Optional[ErrorCode] = Field(None, description="Standard error code for programmatic handling")
+    raw_content: Optional[Any] = Field(None, description="Raw tool output content for agent processing")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Additional execution metadata")
     
     def add_artifact(self, artifact: Artifact) -> None:

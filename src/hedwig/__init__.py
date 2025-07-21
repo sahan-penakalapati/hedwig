@@ -21,6 +21,12 @@ from hedwig.tools import (
     FileReaderTool,
     ListArtifactsTool,
 )
+from hedwig.agents import (
+    BaseAgent,
+    AgentExecutor,
+    DispatcherAgent,
+    GeneralAgent,
+)
 
 __all__ = [
     # Core models
@@ -41,4 +47,10 @@ __all__ = [
     # Basic tools
     "FileReaderTool",
     "ListArtifactsTool",
+    
+    # Agent system
+    "BaseAgent",
+    "AgentExecutor",
+    "DispatcherAgent",
+    "GeneralAgent",
 ]

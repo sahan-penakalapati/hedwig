@@ -344,7 +344,9 @@ Do you want to proceed with this operation?"""
             if not self.check_authorization(tool, risk_tier, **kwargs):
                 raise SecurityGatewayError(
                     f"Tool execution denied: {tool.name} (risk: {risk_tier.value})",
-                    "SecurityGateway"
+                    tool.name,
+                    risk_tier.value,
+                    {"component": "SecurityGateway"}
                 )
             
             # Execute the tool
@@ -357,8 +359,9 @@ Do you want to proceed with this operation?"""
             self.logger.error(f"Tool execution failed: {e}")
             raise SecurityGatewayError(
                 f"Tool execution failed: {str(e)}",
-                "SecurityGateway",
-                cause=e
+                tool.name,
+                "UNKNOWN",
+                {"component": "SecurityGateway", "original_error": str(e)}
             )
     
     def get_denial_history(self) -> List[Dict]:
