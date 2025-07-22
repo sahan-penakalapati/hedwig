@@ -133,7 +133,23 @@ class SecurityGateway:
         """
         tool_name = tool.name.lower()
         
-        # Special handling for BashTool
+        # Check if the tool has its own dynamic risk assessment method
+        if hasattr(tool, 'get_dynamic_risk_tier'):
+            try:
+                # For BashTool, pass the command for dynamic assessment
+                if 'bash' in tool_name and 'command' in kwargs:
+                    dynamic_risk = tool.get_dynamic_risk_tier(kwargs['command'])
+                    self.logger.debug(f"Tool {tool.name} provided dynamic risk: {dynamic_risk.value}")
+                    return dynamic_risk
+                # For other tools that might implement dynamic assessment
+                elif hasattr(tool, 'get_dynamic_risk_tier'):
+                    dynamic_risk = tool.get_dynamic_risk_tier(**kwargs)
+                    self.logger.debug(f"Tool {tool.name} provided dynamic risk: {dynamic_risk.value}")
+                    return dynamic_risk
+            except Exception as e:
+                self.logger.warning(f"Failed to get dynamic risk from {tool.name}: {e}")
+        
+        # Fallback to pattern-based analysis for BashTool
         if 'bash' in tool_name and 'command' in kwargs:
             command = str(kwargs['command']).strip()
             

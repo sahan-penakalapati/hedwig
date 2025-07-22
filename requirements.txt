@@ -12,6 +12,9 @@ openai>=1.0.0
 # Configuration and environment
 python-dotenv>=1.0.0
 
+# Phase 5 tool dependencies
+reportlab>=4.0.0  # For PDF generation
+
 # Optional dependencies for future phases
 # PyYAML>=6.0  # For YAML config files
 # streamlit>=1.28.0  # Alternative web-based GUI

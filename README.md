@@ -4,10 +4,11 @@ Hedwig is a local desktop application that orchestrates specialist agents to han
 
 ## 🚧 Development Status
 
-**Current Phase: Phase 1 - Core Foundation (COMPLETED)**
+**Current Phase: Phase 5 - Tool Expansion (COMPLETED)**
 
 ### ✅ Completed Features
 
+#### Phase 1: Core Foundation
 - **Project Structure**: Full Python package with proper organization
 - **Core Data Models**: TaskInput, TaskOutput, ToolOutput, Artifact classes
 - **Artifact Registry**: Thread-scoped artifact tracking with auto-opening logic
@@ -18,12 +19,37 @@ Hedwig is a local desktop application that orchestrates specialist agents to han
 - **CLI Interface**: Basic command-line interface for testing
 - **Unit Tests**: Comprehensive test coverage for core components
 
-### 🏗️ Next Phase: Phase 2 - Tool System Foundation
+#### Phase 2: Tool System Foundation
+- **Tool Infrastructure**: Base Tool class with standardized interface
+- **Tool Registry**: Centralized tool management and discovery
+- **Security Gateway**: Risk-based security mediation with user confirmation
+- **Basic Tools**: FileReader and ListArtifacts tools
+
+#### Phase 3: Agent System Core
+- **Base Agent Framework**: Abstract base class with consistent interface
+- **Agent Executor**: LangChain-based agent execution with tool integration
+- **Dispatcher Agent**: Intelligent task routing to appropriate specialists
+- **General Agent**: Multi-purpose agent for diverse tasks
+
+#### Phase 4: Application Layer
+- **HedwigApp**: Main application orchestrating threads and artifacts
+- **Thread Management**: Persistent conversation threads with isolated contexts
+- **Enhanced CLI**: Interactive command-line interface with session management
+- **Agent Integration**: Full integration between app, agents, and tools
+
+#### Phase 5: Tool Expansion
+- **Document Generation**: PDFGeneratorTool and MarkdownGeneratorTool
+- **Code Tools**: CodeGeneratorTool with multi-language support and syntax validation
+- **Execution Tools**: PythonExecuteTool and BashTool with security controls
+- **Dynamic Risk Assessment**: Enhanced SecurityGateway with command-specific risk analysis
+- **Comprehensive Testing**: Full test coverage for all Phase 5 tools
+
+### 🏗️ Next Phase: Phase 6 - Specialized Agents
 
 Upcoming features:
-- Tool infrastructure (Tool base class, ToolRegistry)
-- Security Gateway with risk assessment
-- Basic read-only tools (FileReader, ListArtifacts)
+- SWEAgent for software development tasks
+- ResearchAgent for web research and data gathering  
+- Enhanced agent descriptions and routing logic
 
 ## 📁 Project Structure
 
@@ -180,10 +206,10 @@ Hedwig implements a multi-tiered security approach:
 - [ ] Thread management and persistence
 - [ ] Enhanced CLI interface
 
-### Phase 5: Tool Expansion
-- [ ] Document generation tools
-- [ ] Code generation and execution
-- [ ] Enhanced security features
+### Phase 5: Tool Expansion ✅
+- [x] Document generation tools (PDF, Markdown)
+- [x] Code generation and execution tools
+- [x] Enhanced security features with dynamic risk assessment
 
 ### Phase 6: Specialized Agents
 - [ ] SWEAgent for software development

@@ -23,6 +23,7 @@ from uuid import UUID, uuid4
 from hedwig.core.artifact_registry import ArtifactRegistry
 from hedwig.core.config import HedwigConfig, ConfigManager
 from hedwig.core.logging_config import get_logger
+from hedwig.core.llm_mock import get_mock_llm_callback
 from hedwig.core.models import (
     TaskInput, TaskOutput, ChatThread, ConversationMessage, 
     Artifact, ArtifactType, ErrorCode
@@ -31,6 +32,10 @@ from hedwig.agents.dispatcher import DispatcherAgent
 from hedwig.agents.general import GeneralAgent
 from hedwig.agents.executor import AgentExecutor
 from hedwig.tools.registry import ToolRegistry
+from hedwig.tools.security import SecurityGateway
+from hedwig.tools.file_reader import FileReaderTool
+from hedwig.tools.list_artifacts import ListArtifactsTool
+from hedwig.tools import register_all_tools
 
 
 class HedwigApp:
@@ -66,9 +71,19 @@ class HedwigApp:
         
         # Agent system components
         self.tool_registry = ToolRegistry()
-        self.agent_executor = AgentExecutor(tool_registry=self.tool_registry)
+        self.security_gateway = SecurityGateway()
         
-        # Initialize agents
+        # Initialize LLM integration
+        self.llm_callback = get_mock_llm_callback()
+        
+        self.agent_executor = AgentExecutor(
+            tool_registry=self.tool_registry,
+            security_gateway=self.security_gateway,
+            llm_callback=self.llm_callback
+        )
+        
+        # Initialize tools and agents
+        self._initialize_tools()
         self._initialize_agents()
         
         # Application statistics
@@ -82,6 +97,35 @@ class HedwigApp:
         }
         
         self.logger.info("HedwigApp initialized successfully")
+    
+    def _initialize_tools(self) -> None:
+        """Initialize and register all available tools."""
+        # Register all tools using the centralized registration function
+        register_all_tools()
+        
+        # Get the global registry that now contains all tools
+        from hedwig.tools.registry import get_global_registry
+        global_registry = get_global_registry()
+        
+        # Copy all tools from global registry to our local registry
+        for tool in global_registry.list_tools():
+            if not self.tool_registry.has_tool(tool.name):
+                self.tool_registry.register(tool)
+        
+        # Set up artifact provider for ListArtifactsTool
+        def get_current_artifacts():
+            if self.current_thread:
+                return self.current_thread.artifacts
+            return []
+        
+        # Update ListArtifactsTool with artifact provider if it exists
+        if self.tool_registry.has_tool("list_artifacts"):
+            list_artifacts = self.tool_registry.get("list_artifacts")
+            if hasattr(list_artifacts, 'set_artifact_provider'):
+                list_artifacts.set_artifact_provider(get_current_artifacts)
+            self.list_artifacts_tool = list_artifacts
+        
+        self.logger.info(f"Initialized {len(self.tool_registry.list_tools())} tools including Phase 5 tools")
     
     def _initialize_agents(self) -> None:
         """Initialize the agent system with dispatcher and specialists."""
@@ -97,7 +141,8 @@ class HedwigApp:
         # Create dispatcher agent
         self.dispatcher = DispatcherAgent(
             specialists=specialist_agents,
-            default_agent=general_agent
+            default_agent=general_agent,
+            llm_callback=self.llm_callback
         )
         
         self.logger.info(f"Initialized dispatcher with {len(specialist_agents)} specialist agents")
@@ -371,7 +416,7 @@ class HedwigApp:
         
         # Add to conversation
         if self.current_thread:
-            self.current_thread.add_message("user", prompt)
+            self.current_thread.add_message("user", "list artifacts")
             self.current_thread.add_message("assistant", content)
         
         return TaskOutput(

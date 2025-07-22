@@ -9,7 +9,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
 
 
@@ -19,6 +19,11 @@ class SecurityConfig(BaseModel):
     confirmation_timeout: int = Field(default=10, description="Timeout for security confirmations in seconds")
     confirmation_timeout_seconds: int = Field(default=10, description="Alias for confirmation_timeout")
     max_retries: int = Field(default=3, description="Maximum number of task retry attempts")
+    enable_sandbox: bool = Field(default=False, description="Enable sandboxing for execution tools")
+    high_risk_patterns: List[str] = Field(
+        default_factory=lambda: ["rm", "mv", "dd", "mkfs", "format", "del", "deltree"],
+        description="Command patterns that trigger high-risk warnings"
+    )
     
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -27,11 +32,6 @@ class SecurityConfig(BaseModel):
             self.confirmation_timeout_seconds = self.confirmation_timeout
         elif "confirmation_timeout_seconds" in kwargs and "confirmation_timeout" not in kwargs:
             self.confirmation_timeout = self.confirmation_timeout_seconds
-    enable_sandbox: bool = Field(default=False, description="Enable sandboxing for execution tools")
-    high_risk_patterns: List[str] = Field(
-        default_factory=lambda: ["rm", "mv", "dd", "mkfs", "format", "del", "deltree"],
-        description="Command patterns that trigger high-risk warnings"
-    )
 
 
 class LLMConfig(BaseModel):
@@ -45,13 +45,15 @@ class LLMConfig(BaseModel):
     max_tokens: int = Field(default=2000, description="Maximum tokens for LLM responses")
     timeout: int = Field(default=60, description="Request timeout in seconds")
     
-    @validator('temperature')
+    @field_validator('temperature')
+    @classmethod
     def validate_temperature(cls, v):
         if not 0.0 <= v <= 2.0:
             raise ValueError("temperature must be between 0.0 and 2.0")
         return v
     
-    @validator('max_tokens')
+    @field_validator('max_tokens')
+    @classmethod
     def validate_max_tokens(cls, v):
         if v <= 0:
             raise ValueError("max_tokens must be positive")

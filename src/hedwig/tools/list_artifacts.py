@@ -1,285 +1,152 @@
 """
-List Artifacts Tool for discovering available artifacts in the Hedwig system.
+ListArtifactsTool: Tool for discovering artifacts in the current chat thread.
 
-This tool allows agents to discover artifacts within the current chat thread
-on-demand, handling user requests like "open the pdf" or "show me the files".
+This tool allows agents to discover what artifacts are available in the current
+conversation context, which is essential for tasks like "open the PDF" or
+"show me what files we've generated".
 """
 
-from typing import Type, Optional, List
-from pathlib import Path
-
+from typing import Any, Dict, List, Optional
 from pydantic import BaseModel, Field
 
-from hedwig.core.models import RiskTier, ToolOutput, ArtifactType
-from hedwig.core.artifact_registry import ArtifactRegistry
-from hedwig.core.exceptions import ToolExecutionError
+from hedwig.core.models import ToolOutput, RiskTier, Artifact
 from hedwig.tools.base import Tool
 
 
-class ListArtifactsInput(BaseModel):
-    """Input schema for ListArtifactsTool."""
+class ListArtifactsArgs(BaseModel):
+    """Arguments for the ListArtifactsTool."""
     
     artifact_type: Optional[str] = Field(
         default=None,
-        description="Optional filter by artifact type (pdf, code, markdown, research, other)"
+        description="Optional filter by artifact type (pdf, code, markdown, etc.)"
     )
-    include_metadata: bool = Field(
-        default=False,
-        description="Whether to include detailed metadata in the output"
+    limit: int = Field(
+        default=50,
+        description="Maximum number of artifacts to list"
     )
 
 
 class ListArtifactsTool(Tool):
     """
-    Tool for discovering available artifacts within the current chat thread.
+    Tool for listing available artifacts in the current thread.
     
-    This tool provides agents with a list of all artifacts currently tracked
-    in the active ArtifactRegistry, enabling requests like "open the pdf" or
-    "show me all the code files".
-    
-    Risk Tier: READ_ONLY - Safe operation that only reads registry data.
+    This tool provides artifact discovery capability, allowing agents
+    to see what files have been generated and are available for use.
     """
     
-    def __init__(self, artifact_registry: ArtifactRegistry = None, name: str = None):
+    name = "list_artifacts"
+    description = "List all artifacts available in the current conversation thread"
+    args_schema = ListArtifactsArgs
+    risk_tier = RiskTier.READ_ONLY
+    
+    def __init__(self, artifact_provider=None):
         """
-        Initialize the ListArtifactsTool.
+        Initialize the tool with an artifact provider.
         
         Args:
-            artifact_registry: ArtifactRegistry instance to query.
-                              If None, must be set before use.
-            name: Optional custom tool name
+            artifact_provider: Callable that returns list of artifacts for current thread
         """
-        super().__init__(name)
-        self.artifact_registry = artifact_registry
+        super().__init__()
+        self.artifact_provider = artifact_provider
     
-    def set_artifact_registry(self, artifact_registry: ArtifactRegistry) -> None:
+    def set_artifact_provider(self, provider):
+        """Set the artifact provider function."""
+        self.artifact_provider = provider
+    
+    def _run(self, artifact_type: Optional[str] = None, limit: int = 50) -> ToolOutput:
         """
-        Set the artifact registry to query.
-        
-        This method allows the registry to be updated for different chat threads.
-        
-        Args:
-            artifact_registry: ArtifactRegistry instance to use
-        """
-        self.artifact_registry = artifact_registry
-        self.logger.debug(f"Artifact registry set for thread: {artifact_registry.thread_id}")
-    
-    @property
-    def args_schema(self) -> Type[BaseModel]:
-        """Input schema for the list artifacts tool."""
-        return ListArtifactsInput
-    
-    @property
-    def risk_tier(self) -> RiskTier:
-        """Listing artifacts is a safe, read-only operation."""
-        return RiskTier.READ_ONLY
-    
-    @property
-    def description(self) -> str:
-        """Tool description for agent discovery."""
-        return (
-            "Lists all artifacts available in the current chat thread. "
-            "Use this to discover PDFs, code files, documents, and other generated content. "
-            "Can filter by artifact type and include detailed metadata."
-        )
-    
-    def _run(
-        self, 
-        artifact_type: Optional[str] = None,
-        include_metadata: bool = False
-    ) -> ToolOutput:
-        """
-        List artifacts from the current registry.
+        List artifacts in the current thread.
         
         Args:
             artifact_type: Optional filter by artifact type
-            include_metadata: Whether to include detailed metadata
+            limit: Maximum number of artifacts to list
             
         Returns:
-            ToolOutput with formatted artifact list
-            
-        Raises:
-            ToolExecutionError: If registry is not set or operation fails
+            ToolOutput containing the artifact list
         """
         try:
-            # Check if registry is available
-            if self.artifact_registry is None:
-                raise ToolExecutionError(
-                    "No artifact registry available. Registry must be set before use.",
-                    "ListArtifactsTool"
+            # Get artifacts from provider (e.g., current thread)
+            if not self.artifact_provider:
+                return ToolOutput(
+                    text_summary="No artifact provider configured - cannot list artifacts",
+                    success=False,
+                    error="ListArtifactsTool not properly configured with artifact provider"
                 )
             
-            # Get artifacts, optionally filtered by type
-            if artifact_type:
-                # Validate artifact type
-                try:
-                    filter_type = ArtifactType(artifact_type.lower())
-                    artifacts = self.artifact_registry.get_by_type(filter_type)
-                except ValueError:
-                    valid_types = [t.value for t in ArtifactType]
-                    raise ToolExecutionError(
-                        f"Invalid artifact type '{artifact_type}'. "
-                        f"Valid types: {', '.join(valid_types)}",
-                        "ListArtifactsTool"
-                    )
-            else:
-                artifacts = self.artifact_registry.list_all()
+            all_artifacts = self.artifact_provider()
             
-            # Build the response
-            if not artifacts:
-                if artifact_type:
-                    summary = f"No {artifact_type} artifacts found in the current thread."
-                else:
-                    summary = "No artifacts found in the current thread."
-                
+            if not all_artifacts:
                 return ToolOutput(
-                    text_summary=summary,
-                    artifacts=[],
+                    text_summary="No artifacts found in the current conversation",
+                    success=True,
+                    metadata={"artifact_count": 0}
+                )
+            
+            # Filter by type if specified
+            if artifact_type:
+                filtered_artifacts = [
+                    a for a in all_artifacts 
+                    if a.artifact_type.value.lower() == artifact_type.lower()
+                ]
+                filter_msg = f" of type '{artifact_type}'"
+            else:
+                filtered_artifacts = all_artifacts
+                filter_msg = ""
+            
+            # Apply limit
+            if limit > 0:
+                displayed_artifacts = filtered_artifacts[:limit]
+                truncated = len(filtered_artifacts) > limit
+            else:
+                displayed_artifacts = filtered_artifacts
+                truncated = False
+            
+            if not displayed_artifacts:
+                return ToolOutput(
+                    text_summary=f"No artifacts found{filter_msg} in the current conversation",
                     success=True,
                     metadata={
-                        "total_artifacts": 0,
-                        "filtered_type": artifact_type,
-                        "thread_id": str(self.artifact_registry.thread_id)
+                        "artifact_count": 0,
+                        "filter_type": artifact_type,
+                        "total_artifacts": len(all_artifacts)
                     }
                 )
             
-            # Format the artifact list
-            summary_lines = []
+            # Build artifact list
+            artifact_lines = [f"Available artifacts{filter_msg}:"]
             
-            if artifact_type:
-                summary_lines.append(f"Found {len(artifacts)} {artifact_type} artifact(s):")
-            else:
-                summary_lines.append(f"Found {len(artifacts)} artifact(s) in current thread:")
+            for i, artifact in enumerate(displayed_artifacts, 1):
+                # Get file name from path
+                file_name = artifact.file_path.split('/')[-1] if '/' in artifact.file_path else artifact.file_path
+                
+                # Format entry
+                type_display = artifact.artifact_type.value.upper()
+                artifact_lines.append(f"  {i}. {file_name} ({type_display}) - {artifact.description}")
             
-            summary_lines.append("")  # Empty line for formatting
+            if truncated:
+                remaining = len(filtered_artifacts) - limit
+                artifact_lines.append(f"\n... and {remaining} more artifacts")
             
-            # List each artifact
-            for i, artifact in enumerate(artifacts, 1):
-                # Basic info - handle both Path and string file_path
-                if hasattr(artifact.file_path, 'name'):
-                    file_name = artifact.file_path.name
-                else:
-                    file_name = Path(artifact.file_path).name
-                    
-                artifact_line = f"[{i}] {file_name}"
-                
-                # Add type information
-                if hasattr(artifact, 'artifact_type'):
-                    artifact_line += f" ({artifact.artifact_type.value.upper()})"
-                
-                # Add size information if available
-                try:
-                    file_path_obj = Path(artifact.file_path)
-                    if file_path_obj.exists():
-                        size_mb = file_path_obj.stat().st_size / (1024 * 1024)
-                        if size_mb >= 1.0:
-                            artifact_line += f" - {size_mb:.1f}MB"
-                        else:
-                            size_kb = file_path_obj.stat().st_size / 1024
-                            artifact_line += f" - {size_kb:.1f}KB"
-                except Exception:
-                    artifact_line += " - Size unknown"
-                
-                summary_lines.append(artifact_line)
-                
-                # Add description if available
-                if hasattr(artifact, 'description') and artifact.description:
-                    summary_lines.append(f"    Description: {artifact.description}")
-                
-                # Add metadata if requested
-                if include_metadata:
-                    summary_lines.append(f"    Full path: {artifact.file_path}")
-                    if hasattr(artifact, 'created_at'):
-                        summary_lines.append(f"    Created: {artifact.created_at}")
-                    if hasattr(artifact, 'artifact_id'):
-                        summary_lines.append(f"    ID: {artifact.artifact_id}")
-                
-                summary_lines.append("")  # Empty line between artifacts
-            
-            # Add summary statistics
-            if not artifact_type:
-                type_counts = {}
-                for artifact in artifacts:
-                    if hasattr(artifact, 'artifact_type'):
-                        artifact_type_val = artifact.artifact_type.value
-                        type_counts[artifact_type_val] = type_counts.get(artifact_type_val, 0) + 1
-                
-                if type_counts:
-                    summary_lines.append("Breakdown by type:")
-                    for atype, count in sorted(type_counts.items()):
-                        summary_lines.append(f"  - {atype}: {count}")
-            
-            text_summary = "\n".join(summary_lines)
+            text_summary = "\n".join(artifact_lines)
             
             return ToolOutput(
                 text_summary=text_summary,
-                artifacts=[],  # This tool doesn't create new artifacts
                 success=True,
+                raw_content=displayed_artifacts,  # Provide artifacts for programmatic access
                 metadata={
-                    "total_artifacts": len(artifacts),
-                    "filtered_type": artifact_type,
-                    "thread_id": str(self.artifact_registry.thread_id),
-                    "artifact_ids": [
-                        str(artifact.artifact_id) if hasattr(artifact, 'artifact_id') else None
-                        for artifact in artifacts
-                    ],
-                    "artifact_paths": [str(artifact.file_path) for artifact in artifacts],
-                    "include_metadata": include_metadata
+                    "artifact_count": len(displayed_artifacts),
+                    "total_artifacts": len(all_artifacts),
+                    "filtered_artifacts": len(filtered_artifacts),
+                    "filter_type": artifact_type,
+                    "truncated": truncated,
+                    "limit": limit
                 }
             )
             
-        except ToolExecutionError:
-            raise
         except Exception as e:
-            raise ToolExecutionError(
-                f"Failed to list artifacts: {str(e)}",
-                "ListArtifactsTool",
-                cause=e
+            error_msg = f"Failed to list artifacts: {str(e)}"
+            return ToolOutput(
+                text_summary=error_msg,
+                success=False,
+                error=error_msg
             )
-    
-    def get_artifacts_summary(self) -> str:
-        """
-        Get a quick summary of available artifacts.
-        
-        Returns:
-            Brief summary string, or error message if registry not available
-        """
-        try:
-            if self.artifact_registry is None:
-                return "No artifact registry available"
-            
-            artifacts = self.artifact_registry.list_all()
-            if not artifacts:
-                return "No artifacts in current thread"
-            
-            # Count by type
-            type_counts = {}
-            for artifact in artifacts:
-                if hasattr(artifact, 'artifact_type'):
-                    artifact_type = artifact.artifact_type.value
-                    type_counts[artifact_type] = type_counts.get(artifact_type, 0) + 1
-            
-            if not type_counts:
-                return f"{len(artifacts)} artifacts (types unknown)"
-            
-            parts = []
-            for atype, count in sorted(type_counts.items()):
-                parts.append(f"{count} {atype}")
-            
-            return f"{len(artifacts)} artifacts: {', '.join(parts)}"
-            
-        except Exception as e:
-            return f"Error getting artifacts summary: {str(e)}"
-
-
-def create_list_artifacts_tool(artifact_registry: ArtifactRegistry = None) -> ListArtifactsTool:
-    """
-    Factory function to create a ListArtifactsTool instance.
-    
-    Args:
-        artifact_registry: Optional ArtifactRegistry instance
-        
-    Returns:
-        Configured ListArtifactsTool instance
-    """
-    return ListArtifactsTool(artifact_registry=artifact_registry)

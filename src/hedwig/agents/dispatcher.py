@@ -31,11 +31,18 @@ class DispatcherAgent:
     - Maintain routing decisions for analysis and improvement
     """
     
-    def __init__(self, llm_callback: Optional[Callable[[str], str]] = None):
+    def __init__(
+        self, 
+        specialists: Optional[List[BaseAgent]] = None,
+        default_agent: Optional[BaseAgent] = None,
+        llm_callback: Optional[Callable[[str], str]] = None
+    ):
         """
         Initialize the DispatcherAgent.
         
         Args:
+            specialists: List of specialist agents to register
+            default_agent: Default agent for fallback routing
             llm_callback: Function to call LLM for routing decisions
         """
         self.llm_callback = llm_callback
@@ -43,6 +50,14 @@ class DispatcherAgent:
         
         # Registry of available specialist agents
         self.specialist_agents: Dict[str, BaseAgent] = {}
+        
+        # Default agent for fallback routing
+        self.default_agent = default_agent
+        
+        # Register provided specialists
+        if specialists:
+            for agent in specialists:
+                self.register_agent(agent)
         
         # Track routing decisions for analysis
         self.routing_history: List[Dict[str, Any]] = []
@@ -75,28 +90,38 @@ class DispatcherAgent:
     
     def route_task(
         self, 
-        prompt: str, 
-        conversation: Optional[List[ConversationMessage]] = None,
+        task_input: TaskInput,
         excluded_agents: Optional[List[str]] = None
-    ) -> str:
+    ) -> BaseAgent:
         """
         Route a task to the most appropriate specialist agent.
         
         Args:
-            prompt: User task prompt to analyze
-            conversation: Optional conversation history for context
+            task_input: TaskInput containing prompt and context
             excluded_agents: List of agent names to exclude (for re-routing)
             
         Returns:
-            Name of the selected specialist agent
+            Selected specialist agent instance
             
         Raises:
             AgentExecutionError: If no suitable agent can be found
         """
         try:
+            prompt = task_input.prompt
+            conversation = task_input.conversation
+            
+            # Extract excluded agents from parameters if provided
+            if not excluded_agents and task_input.parameters:
+                excluded_agents = task_input.parameters.get("rejected_agents", [])
+            
             self.logger.info(f"Routing task: {prompt[:100]}...")
             
             if not self.specialist_agents:
+                # Fall back to default agent if no specialists
+                if self.default_agent:
+                    self.logger.info("No specialists available, using default agent")
+                    return self.default_agent
+                
                 raise AgentExecutionError(
                     "No specialist agents registered with dispatcher",
                     "DispatcherAgent"
@@ -109,29 +134,40 @@ class DispatcherAgent:
             }
             
             if not available_agents:
+                # Fall back to default agent if all specialists excluded
+                if self.default_agent and (not excluded_agents or self.default_agent.name not in excluded_agents):
+                    self.logger.info("All specialists excluded, using default agent")
+                    return self.default_agent
+                
                 raise AgentExecutionError(
                     f"No available agents after excluding: {excluded_agents}",
                     "DispatcherAgent"
                 )
             
+            # Convert conversation format if needed
+            conversation_messages = self._convert_conversation_format(conversation)
+            
             # Build routing context
             routing_context = self._build_routing_context(
-                available_agents, conversation, excluded_agents
+                available_agents, conversation_messages, excluded_agents
             )
             
             # Get routing decision
-            selected_agent = self._make_routing_decision(prompt, routing_context)
+            selected_agent_name = self._make_routing_decision(prompt, routing_context)
             
-            # Validate selection
-            if selected_agent not in available_agents:
-                self.logger.warning(f"Selected agent '{selected_agent}' not in available agents")
+            # Get the actual agent instance
+            selected_agent = available_agents.get(selected_agent_name)
+            
+            if not selected_agent:
+                self.logger.warning(f"Selected agent '{selected_agent_name}' not in available agents")
                 # Fall back to first available agent
-                selected_agent = next(iter(available_agents.keys()))
+                selected_agent = next(iter(available_agents.values()))
+                selected_agent_name = selected_agent.name
             
             # Record routing decision
-            self._record_routing_decision(prompt, selected_agent, excluded_agents)
+            self._record_routing_decision(prompt, selected_agent_name, excluded_agents)
             
-            self.logger.info(f"Selected agent: {selected_agent}")
+            self.logger.info(f"Selected agent: {selected_agent_name}")
             return selected_agent
             
         except Exception as e:
@@ -141,6 +177,37 @@ class DispatcherAgent:
                 "DispatcherAgent",
                 cause=e
             )
+    
+    def _convert_conversation_format(
+        self, 
+        conversation: Optional[List[Dict[str, str]]]
+    ) -> Optional[List[ConversationMessage]]:
+        """
+        Convert conversation format from dict to ConversationMessage objects.
+        
+        Args:
+            conversation: List of conversation dicts or None
+            
+        Returns:
+            List of ConversationMessage objects or None
+        """
+        if not conversation:
+            return None
+        
+        # If already ConversationMessage objects, return as-is
+        if conversation and isinstance(conversation[0], ConversationMessage):
+            return conversation
+        
+        # Convert from dict format
+        messages = []
+        for msg_dict in conversation:
+            message = ConversationMessage(
+                role=msg_dict["role"],
+                content=msg_dict["content"]
+            )
+            messages.append(message)
+        
+        return messages
     
     def _build_routing_context(
         self,
