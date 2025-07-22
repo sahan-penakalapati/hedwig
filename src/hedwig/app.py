@@ -23,7 +23,7 @@ from uuid import UUID, uuid4
 from hedwig.core.artifact_registry import ArtifactRegistry
 from hedwig.core.config import HedwigConfig, ConfigManager
 from hedwig.core.logging_config import get_logger
-from hedwig.core.llm_mock import get_mock_llm_callback
+from hedwig.core.llm_integration import get_llm_callback, validate_llm_connection
 from hedwig.core.models import (
     TaskInput, TaskOutput, ChatThread, ConversationMessage, 
     Artifact, ArtifactType, ErrorCode
@@ -76,7 +76,13 @@ class HedwigApp:
         self.security_gateway = SecurityGateway()
         
         # Initialize LLM integration
-        self.llm_callback = get_mock_llm_callback()
+        self.llm_callback = get_llm_callback()
+        
+        # Validate LLM connection
+        if not validate_llm_connection():
+            self.logger.warning("LLM connection validation failed - some features may not work correctly")
+        else:
+            self.logger.info("LLM connection validated successfully")
         
         self.agent_executor = AgentExecutor(
             tool_registry=self.tool_registry,

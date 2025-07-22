@@ -1,244 +1,626 @@
-# Hedwig: Multi-Agent Task Execution System
+# 🦉 Hedwig AI - Multi-Agent Desktop Assistant
 
-Hedwig is a local desktop application that orchestrates specialist agents to handle various tasks including document generation, web research, code creation, and terminal command automation.
+Hedwig is a comprehensive desktop application that orchestrates specialist AI agents to handle various tasks including document generation, web research, code creation, and terminal automation. Built with a modern GUI and powered by real API integrations.
 
-## 🚧 Development Status
+## 🚀 **Current Status: Production Ready**
 
-**Current Phase: Phase 6 - Specialized Agents (COMPLETED)**
+Hedwig is a fully functional desktop application with:
+- **Modern GUI** with dark/light themes
+- **Multi-agent system** with intelligent task routing  
+- **Real API integrations** (OpenAI, Firecrawl, Playwright, Brave Search)
+- **Comprehensive tool suite** for diverse tasks
+- **Professional user experience** with chat interface and artifact management
 
-### ✅ Completed Features
+---
 
-#### Phase 1: Core Foundation
-- **Project Structure**: Full Python package with proper organization
-- **Core Data Models**: TaskInput, TaskOutput, ToolOutput, Artifact classes
-- **Artifact Registry**: Thread-scoped artifact tracking with auto-opening logic
-- **Persistence System**: Thread and artifact persistence with JSON serialization
-- **Configuration Management**: Environment-based configuration with defaults
-- **Logging Infrastructure**: Structured logging with file rotation
-- **Error Handling**: Standardized exception framework with error codes
-- **CLI Interface**: Basic command-line interface for testing
-- **Unit Tests**: Comprehensive test coverage for core components
+## 📖 **Table of Contents**
 
-#### Phase 2: Tool System Foundation
-- **Tool Infrastructure**: Base Tool class with standardized interface
-- **Tool Registry**: Centralized tool management and discovery
-- **Security Gateway**: Risk-based security mediation with user confirmation
-- **Basic Tools**: FileReader and ListArtifacts tools
+1. [Quick Start](#-quick-start)
+2. [Features Overview](#-features-overview)
+3. [Architecture](#-architecture)
+4. [Installation & Setup](#-installation--setup)
+5. [Usage Guide](#-usage-guide)
+6. [Configuration](#-configuration)
+7. [Development](#-development)
+8. [Project Structure](#-project-structure)
 
-#### Phase 3: Agent System Core
-- **Base Agent Framework**: Abstract base class with consistent interface
-- **Agent Executor**: LangChain-based agent execution with tool integration
-- **Dispatcher Agent**: Intelligent task routing to appropriate specialists
-- **General Agent**: Multi-purpose agent for diverse tasks
+---
 
-#### Phase 4: Application Layer
-- **HedwigApp**: Main application orchestrating threads and artifacts
-- **Thread Management**: Persistent conversation threads with isolated contexts
-- **Enhanced CLI**: Interactive command-line interface with session management
-- **Agent Integration**: Full integration between app, agents, and tools
+## 🚀 **Quick Start**
 
-#### Phase 5: Tool Expansion
-- **Document Generation**: PDFGeneratorTool and MarkdownGeneratorTool
-- **Code Tools**: CodeGeneratorTool with multi-language support and syntax validation
-- **Execution Tools**: PythonExecuteTool and BashTool with security controls
-- **Dynamic Risk Assessment**: Enhanced SecurityGateway with command-specific risk analysis
-- **Comprehensive Testing**: Full test coverage for all Phase 5 tools
+### **Prerequisites**
+- Python 3.11+ 
+- Git
+- Internet connection for API access
 
-#### Phase 6: Specialized Agents
-- **SWEAgent**: Software engineering specialist for code development, debugging, and refactoring
-- **ResearchAgent**: Research specialist for information gathering and report generation
-- **Enhanced Dispatching**: Structured agent descriptions for intelligent task routing
-- **Research Tools**: FirecrawlResearchTool and BrowserTool for web research and automation
-- **Agent Integration**: Full integration of specialized agents with HedwigApp
-- **Comprehensive Testing**: Full test coverage for specialized agents and routing logic
-
-### 🏗️ Next Phase: Phase 7 - GUI and Polish
-
-Upcoming features:
-- Desktop GUI application with modern interface
-- Enhanced web research integration with real APIs
-- Performance optimizations and monitoring
-- Advanced artifact visualization and management
-
-## 📁 Project Structure
-
-```
-hedwig/
-├── src/hedwig/
-│   ├── core/               # Core system components
-│   │   ├── models.py       # Data models and structures
-│   │   ├── artifact_registry.py  # Artifact tracking
-│   │   ├── persistence.py  # Thread persistence
-│   │   ├── config.py       # Configuration management
-│   │   ├── logging_config.py     # Logging setup
-│   │   └── exceptions.py   # Error handling
-│   ├── agents/             # Agent implementations (future)
-│   ├── tools/              # Tool implementations (future)
-│   ├── gui/                # GUI components (future)
-│   └── cli.py              # Command-line interface
-├── tests/
-│   ├── unit/               # Unit tests
-│   └── integration/        # Integration tests (future)
-├── artifacts/              # Generated artifacts directory
-└── requirements.txt        # Python dependencies
-```
-
-## 🚀 Quick Start
-
-### Installation
-
-1. Clone the repository:
+### **Installation**
 ```bash
+# Clone the repository
 git clone <repository-url>
 cd hedwig
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
+playwright install  # For browser automation
 ```
 
-2. Install dependencies:
+### **Configuration**
 ```bash
+# Copy environment template
+cp .env.template .env
+
+# Edit .env and add your API keys (OpenAI is required)
+# OPENAI_API_KEY=your_openai_key_here
+```
+
+### **Launch**
+```bash
+# Start Desktop GUI (Recommended)
+./venv/bin/python launch_gui.py
+
+# Or use CLI mode
+./venv/bin/python -m hedwig.cli chat
+```
+
+---
+
+## ✨ **Features Overview**
+
+### 🎯 **Core Capabilities**
+
+#### **Multi-Agent Intelligence**
+- **DispatcherAgent**: Intelligently routes tasks to appropriate specialists
+- **SWEAgent**: Software engineering specialist for code development and debugging
+- **ResearchAgent**: Web research specialist for information gathering
+- **GeneralAgent**: Handles diverse general-purpose tasks
+
+#### **Comprehensive Tool Suite**
+- **Document Generation**: Professional PDF reports, Markdown documentation
+- **Web Research**: Intelligent web scraping via Firecrawl API
+- **Browser Automation**: Real web interaction using Playwright
+- **Code Execution**: Python script execution with security controls
+- **Shell Commands**: System command execution with risk assessment
+- **File Operations**: Read, write, and manage files and artifacts
+
+#### **Modern Desktop GUI**
+- **Chat Interface**: Rich messaging with syntax highlighting and history
+- **Artifact Browser**: Visual file management with preview capabilities
+- **Settings Management**: Comprehensive configuration interface
+- **Theme System**: Professional dark/light themes with instant switching
+- **Status Monitoring**: Real-time progress and connection status
+
+### 🔐 **Security & Safety**
+- **Risk-Based Security**: Tools classified by risk level (READ_ONLY → WRITE → EXECUTE → DESTRUCTIVE)
+- **User Confirmation**: Required for high-risk operations
+- **API Key Encryption**: Secure storage of sensitive credentials
+- **Sandboxed Execution**: Isolated tool execution environment
+
+### 🌐 **Real API Integrations**
+- **OpenAI**: Advanced language model capabilities (GPT-4, GPT-3.5-turbo)
+- **Firecrawl**: Professional web scraping and content extraction
+- **Playwright**: Cross-browser automation and testing
+- **Brave Search**: Privacy-focused web search capabilities
+- **ReportLab**: Professional PDF generation and formatting
+
+---
+
+## 🏗 **Architecture**
+
+### **System Design**
+Hedwig follows a **"team of specialists"** architecture where a central dispatcher routes tasks to specialized agents based on task analysis.
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   User Input    │───▶│ DispatcherAgent  │───▶│ Specialist      │
+└─────────────────┘    └──────────────────┘    │ Agent           │
+                                ▲               └─────────────────┘
+                                │                        │
+                                └────────────────────────┘
+                                                         ▼
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│    Artifacts    │◀───│  Tool Registry   │◀───│ Security        │
+│    Registry     │    │  & Execution     │    │ Gateway         │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
+
+### **Core Components**
+
+#### **Agent System**
+- **BaseAgent**: Abstract foundation for all agents with standardized interface
+- **AgentExecutor**: LangChain-based execution engine with tool integration
+- **Structured Descriptions**: Machine-readable agent capabilities for intelligent routing
+
+#### **Tool System** 
+- **Tool Registry**: Centralized tool discovery and management
+- **Security Gateway**: Risk assessment and user confirmation system
+- **Structured Output**: Tools return `ToolOutput` objects with artifacts for reliable processing
+
+#### **Artifact Management**
+- **ArtifactRegistry**: Thread-scoped tracking of generated files
+- **Auto-Opening Logic**: Intelligent file opening based on type and context
+- **Persistence**: JSON-based storage of artifact metadata and conversation history
+
+### **Technology Stack**
+- **Backend**: Python 3.11+ with AsyncIO support
+- **GUI Framework**: Tkinter with custom theming system
+- **LLM Integration**: OpenAI API via official Python client
+- **Web Automation**: Playwright for cross-browser support
+- **PDF Generation**: ReportLab for professional document creation
+- **Configuration**: Pydantic models with environment variable support
+
+---
+
+## 🛠 **Installation & Setup**
+
+### **System Requirements**
+- **Python**: 3.11 or higher
+- **Operating System**: Windows 10+, macOS 10.15+, or Linux (Ubuntu 20.04+)
+- **Memory**: 4GB RAM minimum, 8GB recommended
+- **Storage**: 2GB free space for dependencies and artifacts
+- **Network**: Internet connection for API access
+
+### **Detailed Installation**
+
+#### **1. Environment Setup**
+```bash
+# Ensure Python 3.11+
+python3 --version
+
+# Clone repository
+git clone <repository-url>
+cd hedwig
+
+# Create isolated environment
+python3 -m venv venv
+source venv/bin/activate  # Linux/macOS
+# or
+venv\Scripts\activate     # Windows
+```
+
+#### **2. Dependencies Installation**
+```bash
+# Install Python packages
+pip install -r requirements.txt
+
+# Install Playwright browsers
+playwright install
+
+# Verify installation
+python -c "import hedwig; print('Hedwig installed successfully')"
+```
+
+#### **3. API Configuration**
+```bash
+# Copy configuration template
+cp .env.template .env
+
+# Edit configuration file
+nano .env  # or your preferred editor
+```
+
+**Required API Keys:**
+- `OPENAI_API_KEY`: OpenAI API key (required)
+
+**Optional API Keys:**
+- `FIRECRAWL_API_KEY`: For enhanced web scraping
+- `BRAVE_SEARCH_API_KEY`: For web search capabilities
+- `ANTHROPIC_API_KEY`: Alternative to OpenAI
+
+#### **4. First Launch**
+```bash
+# Test basic functionality
+./venv/bin/python tests/integration/test_setup.py
+
+# Launch GUI application
+./venv/bin/python launch_gui.py
+```
+
+---
+
+## 📚 **Usage Guide**
+
+### **Desktop GUI Usage**
+
+#### **Starting the Application**
+```bash
+./venv/bin/python launch_gui.py
+```
+
+#### **Main Interface**
+- **Left Panel**: Chat interface for conversation with AI agents
+- **Right Panel**: Artifact browser showing generated files
+- **Menu Bar**: File operations, settings, and help
+- **Status Bar**: Real-time status and progress indicators
+
+#### **Chat Interface**
+- **Send Message**: Type message and press Enter (Shift+Enter for new line)
+- **Message Types**: Text, code blocks (with syntax highlighting), and links
+- **History**: Persistent conversation history with timestamps
+- **Export**: Save conversations to text files
+
+#### **Artifact Management**
+- **Browse Files**: Tree view of generated artifacts organized by type
+- **Preview**: Built-in preview for text, code, and markdown files
+- **Actions**: Open, copy path, delete files via context menu
+- **Search**: Filter artifacts by name or type
+
+#### **Settings Configuration**
+- **Access**: Menu → Edit → Preferences or Ctrl+,
+- **API Keys**: Secure management with show/hide functionality
+- **Agent Settings**: Model selection, retry limits, timeouts
+- **Tool Settings**: Browser options, PDF preferences
+- **UI Settings**: Theme selection, logging level, data directory
+
+### **Command Line Usage**
+
+#### **Interactive CLI**
+```bash
+./venv/bin/python -m hedwig.cli chat
+```
+
+#### **Direct Python Integration**
+```python
+from hedwig.app import HedwigApp
+
+# Initialize application
+app = HedwigApp()
+
+# Execute tasks
+result = app.run("Create a PDF report about renewable energy trends")
+print(result.content)
+
+# Access generated artifacts
+for artifact in result.metadata.get('artifacts', []):
+    print(f"Generated: {artifact.file_path}")
+```
+
+### **Common Use Cases**
+
+#### **Document Generation**
+```
+"Generate a professional PDF report about artificial intelligence trends in 2024"
+"Create a markdown documentation file for this Python project"
+"Write a technical specification document for a web API"
+```
+
+#### **Web Research**
+```
+"Research the latest developments in quantum computing and create a summary report"
+"Find information about electric vehicle market trends and compile key findings"
+"Investigate best practices for cybersecurity in small businesses"
+```
+
+#### **Code Development**
+```
+"Write a Python script to analyze CSV data and generate charts"
+"Create a web scraper for product information from e-commerce sites"
+"Debug this JavaScript function and suggest improvements"
+```
+
+#### **Data Analysis**
+```
+"Analyze this dataset and create visualizations showing key trends"
+"Process this log file and identify error patterns"
+"Generate a statistical report from survey data"
+```
+
+---
+
+## ⚙️ **Configuration**
+
+### **Environment Variables**
+All settings can be configured via `.env` file or environment variables:
+
+#### **Core Settings**
+```bash
+# Required
+OPENAI_API_KEY=your_openai_key
+
+# Application Settings
+HEDWIG_LOG_LEVEL=INFO                    # DEBUG, INFO, WARNING, ERROR
+HEDWIG_DATA_DIR=~/.hedwig               # Data storage directory
+HEDWIG_MAX_RETRIES=3                    # Task retry limit
+HEDWIG_SECURITY_TIMEOUT=10              # Security dialog timeout
+
+# Artifact Settings
+HEDWIG_ARTIFACTS_DIR=artifacts          # Relative to data directory
+HEDWIG_ENABLE_AUTO_OPEN=true           # Auto-open generated files
+```
+
+#### **API Configuration**
+```bash
+# LLM Settings
+HEDWIG_LLM_MODEL=gpt-4                 # AI model to use
+ANTHROPIC_API_KEY=your_anthropic_key   # Alternative LLM provider
+
+# Web Services
+FIRECRAWL_API_KEY=your_firecrawl_key   # Web scraping API
+FIRECRAWL_BASE_URL=https://api.firecrawl.dev
+
+BRAVE_SEARCH_API_KEY=your_brave_key    # Web search API
+BRAVE_SEARCH_BASE_URL=https://api.search.brave.com/res/v1
+```
+
+#### **Tool Configuration**
+```bash
+# Browser Automation
+HEDWIG_BROWSER_HEADLESS=true           # Run browser in headless mode
+HEDWIG_BROWSER_TIMEOUT=30              # Browser operation timeout
+HEDWIG_BROWSER_USER_AGENT=Mozilla/5.0... # Custom user agent
+
+# PDF Generation
+HEDWIG_PDF_PAGE_SIZE=letter            # letter, a4, legal
+HEDWIG_PDF_FONT_FAMILY=Helvetica      # Default font family
+```
+
+### **Advanced Configuration**
+
+#### **Logging Configuration**
+```bash
+# Detailed logging for debugging
+HEDWIG_LOG_LEVEL=DEBUG
+
+# Log files location: ~/.hedwig/logs/
+# - hedwig.log: Application logs
+# - agents.log: Agent execution logs
+# - tools.log: Tool execution logs
+```
+
+#### **Performance Tuning**
+```bash
+# Thread pool settings (auto-configured)
+HEDWIG_THREAD_POOL_SIZE=4              # Background worker threads
+HEDWIG_MAX_CONCURRENT_TASKS=2          # Concurrent agent executions
+```
+
+---
+
+## 👨‍💻 **Development**
+
+### **Development Setup**
+```bash
+# Development dependencies
 pip install -e .
+pip install pytest pytest-cov black isort mypy
+
+# Code formatting
+black src/ tests/
+isort src/ tests/
+
+# Type checking
+mypy src/
 ```
 
-3. Initialize configuration:
+### **Testing**
 ```bash
-hedwig init
-```
-
-4. Configure your environment:
-   - Copy `.env.template` to `.env`
-   - Add your API keys (OpenAI/Anthropic)
-
-### Basic Usage
-
-Start an interactive chat session:
-```bash
-hedwig chat
-```
-
-List all chat threads:
-```bash
-hedwig threads
-```
-
-Clean up old threads:
-```bash
-hedwig cleanup --keep-days 30
-```
-
-## 🧪 Testing
-
-Run the test suite:
-```bash
+# Run all tests
 pytest tests/
-```
 
-Run tests with coverage:
-```bash
+# Integration tests
+pytest tests/integration/
+
+# Unit tests only
+pytest tests/unit/
+
+# With coverage
 pytest tests/ --cov=hedwig --cov-report=html
 ```
 
-## 📖 Architecture Overview
+### **Project Architecture**
 
-Hedwig follows a "team of specialists" architecture:
+#### **Design Principles**
+1. **Modular Design**: Clear separation of concerns between components
+2. **Security First**: Risk-based tool execution with user confirmation
+3. **Thread Safety**: Safe concurrent execution with proper synchronization
+4. **Extensibility**: Easy to add new agents, tools, and capabilities
+5. **User Experience**: Professional GUI with intuitive interaction patterns
 
-- **HedwigApp**: Main application managing threads and artifacts
-- **DispatcherAgent**: Routes tasks to appropriate specialist agents
-- **Specialist Agents**: Handle specific types of tasks (coding, research, etc.)
-- **Tools**: Perform specific actions (file operations, code execution, etc.)
-- **Security Gateway**: Mediates tool execution with risk assessment
-- **Artifact System**: Tracks and manages generated files
+#### **Adding New Agents**
+```python
+from hedwig.agents.base import BaseAgent
+from hedwig.core.models import TaskInput, TaskOutput
 
-### Key Design Principles
-
-1. **Thread-Scoped Context**: Each conversation maintains its own history and artifacts
-2. **Structured Communication**: Tools return structured data instead of text parsing
-3. **Security First**: All tool execution goes through security validation
-4. **Local-First**: Designed for secure local desktop operation
-5. **Extensible**: Easy to add new agents and tools
-
-## 🔧 Configuration
-
-Hedwig uses environment variables for configuration:
-
-```bash
-# LLM Provider
-HEDWIG_LLM__PROVIDER=openai          # or anthropic
-HEDWIG_LLM__MODEL=gpt-4              # Model to use
-HEDWIG_LLM__API_KEY=your_key_here    # API key
-
-# Application
-HEDWIG_LOG_LEVEL=INFO                # Logging level
-HEDWIG_DATA_DIR=~/.hedwig            # Data storage directory
-HEDWIG_MAX_RETRIES=3                 # Task retry limit
+class MyCustomAgent(BaseAgent):
+    @property
+    def name(self) -> str:
+        return "MyCustomAgent"
+    
+    @property
+    def description(self) -> Dict[str, Any]:
+        return {
+            "agent_name": "MyCustomAgent",
+            "purpose": "Handles custom specialized tasks",
+            "capabilities": ["custom_task", "specialized_processing"],
+            "example_tasks": [
+                "Process custom data format",
+                "Generate specialized reports"
+            ]
+        }
+    
+    def _run(self, task_input: TaskInput) -> TaskOutput:
+        # Implementation here
+        pass
 ```
 
-See `.env.template` for all available options.
+#### **Adding New Tools**
+```python
+from hedwig.tools.base import Tool
+from hedwig.core.models import RiskTier, ToolOutput
+from pydantic import BaseModel
 
-## 🛡️ Security Model
+class MyToolArgs(BaseModel):
+    input_param: str
 
-Hedwig implements a multi-tiered security approach:
+class MyCustomTool(Tool):
+    @property
+    def args_schema(self):
+        return MyToolArgs
+    
+    @property
+    def risk_tier(self) -> RiskTier:
+        return RiskTier.READ_ONLY
+    
+    @property
+    def description(self) -> str:
+        return "Performs custom operations"
+    
+    def _run(self, **kwargs) -> ToolOutput:
+        # Implementation here
+        pass
+```
 
-- **Risk Tiers**: READ_ONLY → WRITE → EXECUTE → DESTRUCTIVE
-- **User Confirmation**: Required for high-risk operations
-- **Dynamic Assessment**: Command pattern analysis for additional risk
-- **Fail-Safe Design**: Operations denied by default on timeout
+### **Contributing Guidelines**
+1. **Code Style**: Follow PEP 8, use Black for formatting
+2. **Testing**: Add tests for new features and bug fixes
+3. **Documentation**: Update docstrings and README for new features
+4. **Security**: Consider security implications of new tools and features
+5. **Performance**: Profile and optimize performance-critical code
 
-## 📝 Development Guidelines
+---
 
-### Adding New Components
+## 📁 **Project Structure**
 
-1. **Data Models**: Add to `core/models.py` with Pydantic validation
-2. **Tools**: Inherit from base Tool class (future implementation)
-3. **Agents**: Inherit from BaseAgent with structured description
-4. **Tests**: Add comprehensive unit tests for new components
+```
+hedwig/
+├── src/hedwig/                 # Main source code
+│   ├── agents/                 # AI agent implementations
+│   │   ├── base.py            # Base agent class
+│   │   ├── dispatcher.py      # Task routing agent
+│   │   ├── executor.py        # Agent execution framework
+│   │   ├── general.py         # General-purpose agent
+│   │   ├── research.py        # Research specialist
+│   │   └── swe.py             # Software engineering agent
+│   ├── core/                  # Core system components
+│   │   ├── artifact_registry.py  # File tracking system
+│   │   ├── config.py          # Configuration management
+│   │   ├── exceptions.py      # Custom exception classes
+│   │   ├── llm_integration.py # OpenAI API integration
+│   │   ├── logging_config.py  # Logging configuration
+│   │   ├── models.py          # Data models (Pydantic)
+│   │   └── persistence.py     # Data persistence layer
+│   ├── tools/                 # Tool implementations
+│   │   ├── base.py            # Base tool class
+│   │   ├── bash_tool.py       # Shell command execution
+│   │   ├── browser_tool.py    # Playwright browser automation
+│   │   ├── code_generator.py  # Code generation tool
+│   │   ├── file_reader.py     # File reading operations
+│   │   ├── firecrawl_research.py  # Web scraping tool
+│   │   ├── list_artifacts.py  # Artifact discovery
+│   │   ├── markdown_generator.py # Markdown generation
+│   │   ├── pdf_generator.py   # PDF creation (ReportLab)
+│   │   ├── python_execute.py  # Python code execution
+│   │   ├── registry.py        # Tool registration system
+│   │   └── security.py        # Security gateway
+│   ├── gui/                   # Desktop GUI application
+│   │   ├── app.py             # Main GUI application
+│   │   ├── components/        # UI components
+│   │   │   ├── artifact_viewer.py  # File browser
+│   │   │   ├── chat_window.py      # Chat interface
+│   │   │   └── status_bar.py       # Status display
+│   │   ├── dialogs/           # Modal dialogs
+│   │   │   └── settings.py    # Configuration dialog
+│   │   ├── styles/            # Theme system
+│   │   │   └── modern_theme.py     # Dark/light themes
+│   │   └── utils/             # GUI utilities
+│   │       └── threading_utils.py  # Thread management
+│   ├── app.py                 # Main application class
+│   └── cli.py                 # Command-line interface
+├── tests/                     # Test suite
+│   ├── unit/                  # Unit tests
+│   └── integration/           # Integration tests
+├── artifacts/                 # Generated files storage
+├── .env.template             # Environment configuration template
+├── .env                      # User environment variables
+├── requirements.txt          # Python dependencies
+├── launch_gui.py            # GUI application launcher
+├── setup.py                 # Package configuration
+└── README.md               # This file
+```
 
-### Code Style
+---
 
-- Follow PEP 8 style guidelines
-- Use type hints for all functions
-- Document classes and methods with docstrings
-- Prefer composition over inheritance
+## 🔧 **Troubleshooting**
 
-## 🗺️ Roadmap
+### **Common Issues**
 
-### Phase 2: Tool System Foundation
-- [ ] Tool infrastructure and registry
-- [ ] Security Gateway implementation
-- [ ] Basic read-only tools
+#### **"Module not found" errors**
+```bash
+# Ensure virtual environment is activated
+source venv/bin/activate
 
-### Phase 3: Agent System Core
-- [ ] BaseAgent and AgentExecutor
-- [ ] DispatcherAgent routing logic
-- [ ] Basic GeneralAgent implementation
+# Reinstall dependencies
+pip install -r requirements.txt
+```
 
-### Phase 4: Application Layer
-- [ ] HedwigApp main class
-- [ ] Thread management and persistence
-- [ ] Enhanced CLI interface
+#### **API Key errors**
+```bash
+# Verify .env file exists and contains valid keys
+cat .env | grep OPENAI_API_KEY
 
-### Phase 5: Tool Expansion ✅
-- [x] Document generation tools (PDF, Markdown)
-- [x] Code generation and execution tools
-- [x] Enhanced security features with dynamic risk assessment
+# Test API connectivity
+./venv/bin/python tests/integration/test_llm_integration.py
+```
 
-### Phase 6: Specialized Agents ✅
-- [x] SWEAgent for software development tasks
-- [x] ResearchAgent for web research and data gathering
-- [x] Enhanced agent descriptions and routing logic
-- [x] Research tools (FirecrawlResearchTool, BrowserTool)
+#### **GUI won't start**
+```bash
+# Check Python version (3.11+ required)
+python --version
 
-### Phase 7: GUI and Polish
-- [ ] Desktop GUI application
-- [ ] Web research integration
-- [ ] Performance optimizations
+# Verify Tkinter is available
+python -c "import tkinter; print('Tkinter available')"
 
-## 📄 License
+# Install system packages if needed (Ubuntu/Debian)
+sudo apt-get install python3-tk
+```
 
-[License information to be added]
+#### **Browser automation fails**
+```bash
+# Install/reinstall Playwright browsers
+playwright install
 
-## 🤝 Contributing
+# Check browser installation
+playwright install --help
+```
 
-[Contributing guidelines to be added]
+### **Performance Issues**
+- **High Memory Usage**: Reduce concurrent operations or increase system RAM
+- **Slow Response**: Check internet connection and API response times
+- **GUI Freezing**: Ensure all long operations use background threads
 
-## 📞 Support
+### **Getting Help**
+1. **Check Logs**: `~/.hedwig/logs/hedwig.log`
+2. **System Info**: Use GUI menu → Tools → System Info
+3. **Debug Mode**: Set `HEDWIG_LOG_LEVEL=DEBUG` in .env
+4. **API Status**: Verify API keys and service availability
 
-[Support information to be added]
+---
+
+## 📄 **License & Credits**
+
+### **License**
+This project is licensed under the MIT License - see the LICENSE file for details.
+
+### **Built With**
+- **Python**: Core programming language
+- **OpenAI**: Language model capabilities
+- **Firecrawl**: Web scraping and content extraction
+- **Playwright**: Browser automation
+- **ReportLab**: PDF generation
+- **Tkinter**: Desktop GUI framework
+- **LangChain**: Agent orchestration framework
+- **Pydantic**: Data validation and settings
+
+### **Acknowledgments**
+- OpenAI for advanced language model capabilities
+- The Python community for excellent libraries and tools
+- Contributors and testers who helped refine the system
+
+---
+
+**🦉 Hedwig AI - Intelligent Multi-Agent Desktop Assistant**
+
+*Transform your workflow with AI-powered automation, research, and content generation.*

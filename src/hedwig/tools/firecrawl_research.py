@@ -12,10 +12,17 @@ from pathlib import Path
 from typing import Optional, Dict, Any, List, Union
 from urllib.parse import urlparse
 
+try:
+    from firecrawl import FirecrawlApp
+except ImportError:
+    FirecrawlApp = None
+
+import requests
 from pydantic import BaseModel, Field, validator
 
 from hedwig.core.models import RiskTier, ToolOutput, Artifact
 from hedwig.core.config import get_config
+from hedwig.core.logging_config import get_logger
 from hedwig.tools.base import Tool
 
 
@@ -71,9 +78,43 @@ class FirecrawlResearchTool(Tool):
     Performs intelligent web research by crawling websites, extracting content,
     and generating comprehensive research reports with proper citations.
     
-    Note: This is a mock implementation as Firecrawl service integration
-    would require API keys and external service setup.
+    Uses real Firecrawl API for web scraping and content extraction.
     """
+    
+    def __init__(self):
+        super().__init__()
+        self.logger = get_logger("hedwig.tools.firecrawl")
+        self._firecrawl_client = None
+        self._brave_search_api_key = None
+        
+    def _get_firecrawl_client(self) -> Optional[FirecrawlApp]:
+        """Get Firecrawl client instance."""
+        if self._firecrawl_client is None:
+            if FirecrawlApp is None:
+                self.logger.error("firecrawl-py not installed. Install with: pip install firecrawl-py")
+                return None
+                
+            api_key = os.getenv("FIRECRAWL_API_KEY")
+            if not api_key:
+                self.logger.error("FIRECRAWL_API_KEY not found in environment variables")
+                return None
+                
+            try:
+                self._firecrawl_client = FirecrawlApp(api_key=api_key)
+                self.logger.info("Initialized Firecrawl client")
+            except Exception as e:
+                self.logger.error(f"Failed to initialize Firecrawl client: {str(e)}")
+                return None
+                
+        return self._firecrawl_client
+        
+    def _get_brave_search_key(self) -> Optional[str]:
+        """Get Brave Search API key."""
+        if self._brave_search_api_key is None:
+            self._brave_search_api_key = os.getenv("BRAVE_SEARCH_API_KEY")
+            if not self._brave_search_api_key:
+                self.logger.warning("BRAVE_SEARCH_API_KEY not found. Web search will be limited.")
+        return self._brave_search_api_key
     
     @property
     def args_schema(self):
@@ -99,8 +140,18 @@ class FirecrawlResearchTool(Tool):
         try:
             self.logger.info(f"Starting web research for query: {args.query}")
             
-            # Mock implementation - in production this would use actual Firecrawl API
-            research_results = self._conduct_mock_research(args)
+            # Check if Firecrawl is available
+            firecrawl_client = self._get_firecrawl_client()
+            if not firecrawl_client:
+                return ToolOutput(
+                    text_summary="Firecrawl API not available. Please install firecrawl-py and set FIRECRAWL_API_KEY.",
+                    artifacts=[],
+                    success=False,
+                    error_message="Firecrawl API configuration missing"
+                )
+            
+            # Conduct real research using Firecrawl API
+            research_results = self._conduct_firecrawl_research(args, firecrawl_client)
             
             artifacts = []
             
@@ -142,104 +193,247 @@ class FirecrawlResearchTool(Tool):
                 error_message=str(e)
             )
     
-    def _conduct_mock_research(self, args: FirecrawlResearchArgs) -> Dict[str, Any]:
+    def _conduct_firecrawl_research(self, args: FirecrawlResearchArgs, firecrawl_client: FirecrawlApp) -> Dict[str, Any]:
         """
-        Conduct mock web research (placeholder for actual Firecrawl integration).
+        Conduct real web research using Firecrawl API.
         
         Args:
             args: Research arguments
+            firecrawl_client: Initialized Firecrawl client
             
         Returns:
-            Dictionary with mock research results
+            Dictionary with research results
         """
-        # Mock research results based on query
-        query_lower = args.query.lower()
+        try:
+            # Step 1: Get URLs to research
+            urls_to_research = []
+            
+            if args.urls:
+                # Use provided URLs
+                urls_to_research = args.urls[:args.max_pages]
+                self.logger.info(f"Using provided URLs: {len(urls_to_research)} URLs")
+            else:
+                # Search for relevant URLs using Brave Search API
+                urls_to_research = self._search_urls_for_query(args.query, args.max_pages)
+                self.logger.info(f"Found {len(urls_to_research)} URLs via search")
+            
+            # Step 2: Scrape content from URLs using Firecrawl
+            sources = []
+            key_findings = []
+            
+            for url in urls_to_research:
+                try:
+                    self.logger.info(f"Scraping URL: {url}")
+                    
+                    # Use Firecrawl to scrape the URL
+                    scraped_data = firecrawl_client.scrape_url(
+                        url, 
+                        params={
+                            'formats': ['markdown', 'html'],
+                            'includeTags': ['title', 'meta', 'p', 'h1', 'h2', 'h3'],
+                            'excludeTags': ['nav', 'footer', 'script'],
+                            'onlyMainContent': True
+                        }
+                    )
+                    
+                    if scraped_data and 'markdown' in scraped_data:
+                        content = scraped_data['markdown']
+                        title = scraped_data.get('metadata', {}).get('title', 'Unknown Title')
+                        
+                        # Extract key findings from content
+                        content_findings = self._extract_key_findings(
+                            content, args.query, args.research_depth
+                        )
+                        key_findings.extend(content_findings)
+                        
+                        # Add source info
+                        sources.append({
+                            'url': url,
+                            'title': title,
+                            'type': self._classify_content_type(url, content),
+                            'content_length': len(content),
+                            'scraped_at': datetime.now().isoformat()
+                        })
+                        
+                        self.logger.info(f"Successfully scraped {url}: {len(content)} characters")
+                    
+                except Exception as e:
+                    self.logger.warning(f"Failed to scrape {url}: {str(e)}")
+                    continue
+            
+            # Remove duplicate findings
+            unique_findings = list(dict.fromkeys(key_findings))
+            
+            # Limit findings based on research depth
+            if args.research_depth == "shallow":
+                unique_findings = unique_findings[:3]
+            elif args.research_depth == "medium":
+                unique_findings = unique_findings[:6]
+            # Deep research keeps all findings
+            
+            return {
+                "query": args.query,
+                "pages_analyzed": len(sources),
+                "key_findings": unique_findings,
+                "sources": sources,
+                "research_depth": args.research_depth,
+                "timestamp": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            self.logger.error(f"Firecrawl research failed: {str(e)}")
+            # Fallback to basic results
+            return {
+                "query": args.query,
+                "pages_analyzed": 0,
+                "key_findings": [f"Research on '{args.query}' encountered technical difficulties."],
+                "sources": [],
+                "research_depth": args.research_depth,
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e)
+            }
+    
+    def _search_urls_for_query(self, query: str, max_results: int = 5) -> List[str]:
+        """Search for URLs related to the query using Brave Search API."""
+        brave_api_key = self._get_brave_search_key()
+        if not brave_api_key:
+            # Fallback to some default authoritative sources
+            self.logger.warning("No Brave Search API key, using fallback URL generation")
+            return self._generate_fallback_urls(query, max_results)
         
-        # Generate mock findings based on query content
-        key_findings = []
-        sources = []
+        try:
+            # Use Brave Search API
+            headers = {
+                'Accept': 'application/json',
+                'Accept-Encoding': 'gzip',
+                'X-Subscription-Token': brave_api_key
+            }
+            
+            params = {
+                'q': query,
+                'count': max_results,
+                'safesearch': 'moderate',
+                'search_lang': 'en',
+                'country': 'US'
+            }
+            
+            base_url = os.getenv("BRAVE_SEARCH_BASE_URL", "https://api.search.brave.com/res/v1")
+            response = requests.get(
+                f"{base_url}/web/search",
+                headers=headers,
+                params=params,
+                timeout=10
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                urls = []
+                
+                # Extract URLs from search results
+                for result in data.get('web', {}).get('results', []):
+                    url = result.get('url')
+                    if url and self._is_valid_research_url(url):
+                        urls.append(url)
+                        
+                self.logger.info(f"Brave Search returned {len(urls)} valid URLs")
+                return urls[:max_results]
+            else:
+                self.logger.error(f"Brave Search API error: {response.status_code}")
+                return self._generate_fallback_urls(query, max_results)
+                
+        except Exception as e:
+            self.logger.error(f"Brave Search API failed: {str(e)}")
+            return self._generate_fallback_urls(query, max_results)
+    
+    def _generate_fallback_urls(self, query: str, max_results: int) -> List[str]:
+        """Generate fallback URLs for research when search APIs are unavailable."""
+        # Use known authoritative sources that might have relevant content
+        fallback_domains = [
+            "en.wikipedia.org",
+            "www.britannica.com", 
+            "scholar.google.com",
+            "www.nature.com",
+            "arxiv.org"
+        ]
         
-        if "ai" in query_lower or "artificial intelligence" in query_lower:
-            key_findings = [
-                "AI technology continues to advance rapidly with new breakthroughs in large language models",
-                "Machine learning applications are expanding across healthcare, finance, and automation",
-                "Ethical AI development and regulation are becoming increasingly important",
-                "AI adoption in enterprise settings is growing, with focus on productivity gains"
+        urls = []
+        query_encoded = query.replace(' ', '+')
+        
+        for domain in fallback_domains[:max_results]:
+            if domain == "en.wikipedia.org":
+                url = f"https://{domain}/wiki/{query.replace(' ', '_')}"
+            elif domain == "scholar.google.com":
+                url = f"https://{domain}/scholar?q={query_encoded}"
+            elif domain == "arxiv.org":
+                url = f"https://{domain}/search/?query={query_encoded}"
+            else:
+                url = f"https://{domain}/search?q={query_encoded}"
+            urls.append(url)
+        
+        return urls
+    
+    def _is_valid_research_url(self, url: str) -> bool:
+        """Check if URL is suitable for research."""
+        try:
+            parsed = urlparse(url)
+            domain = parsed.netloc.lower()
+            
+            # Skip social media and low-quality domains
+            skip_domains = [
+                'twitter.com', 'facebook.com', 'instagram.com', 'tiktok.com',
+                'reddit.com', 'pinterest.com', 'youtube.com'
             ]
-            sources = [
-                {"url": "https://example.com/ai-trends-2024", "title": "AI Trends 2024", "type": "article"},
-                {"url": "https://example.com/ml-applications", "title": "Machine Learning Applications", "type": "research"},
-                {"url": "https://example.com/ai-ethics", "title": "AI Ethics Guidelines", "type": "documentation"},
-                {"url": "https://example.com/enterprise-ai", "title": "Enterprise AI Adoption", "type": "report"}
-            ]
-        elif "python" in query_lower:
-            key_findings = [
-                "Python remains the most popular programming language for data science and AI",
-                "Python 3.12 introduces new performance improvements and syntax features",
-                "The Python ecosystem continues to grow with new libraries and frameworks",
-                "Python is increasingly used in web development, automation, and scientific computing"
-            ]
-            sources = [
-                {"url": "https://example.com/python-trends", "title": "Python Usage Trends", "type": "article"},
-                {"url": "https://example.com/python-312", "title": "Python 3.12 Features", "type": "documentation"},
-                {"url": "https://example.com/python-ecosystem", "title": "Python Ecosystem", "type": "blog"},
-                {"url": "https://example.com/python-web-dev", "title": "Python Web Development", "type": "tutorial"}
-            ]
-        elif "climate" in query_lower or "environment" in query_lower:
-            key_findings = [
-                "Climate change impacts are accelerating globally with rising temperatures",
-                "Renewable energy adoption is increasing but needs faster deployment",
-                "Carbon capture technology shows promise but requires significant investment",
-                "International cooperation on climate action remains challenging but essential"
-            ]
-            sources = [
-                {"url": "https://example.com/climate-data", "title": "Global Climate Data", "type": "research"},
-                {"url": "https://example.com/renewable-energy", "title": "Renewable Energy Report", "type": "report"},
-                {"url": "https://example.com/carbon-capture", "title": "Carbon Capture Technology", "type": "article"},
-                {"url": "https://example.com/climate-policy", "title": "Climate Policy Analysis", "type": "analysis"}
-            ]
+            
+            return not any(skip in domain for skip in skip_domains)
+        except:
+            return False
+    
+    def _extract_key_findings(self, content: str, query: str, depth: str) -> List[str]:
+        """Extract key findings from scraped content."""
+        findings = []
+        
+        # Simple content analysis - in production this could use NLP
+        sentences = content.split('. ')
+        query_terms = query.lower().split()
+        
+        for sentence in sentences:
+            sentence_lower = sentence.lower()
+            
+            # Check if sentence contains query terms and is substantive
+            if (any(term in sentence_lower for term in query_terms) and 
+                len(sentence.strip()) > 50 and 
+                len(sentence.strip()) < 300):
+                
+                # Clean up the sentence
+                clean_sentence = sentence.strip().replace('\n', ' ').replace('\r', '')
+                if clean_sentence and not clean_sentence.endswith('.'):
+                    clean_sentence += '.'
+                    
+                findings.append(clean_sentence)
+        
+        # Limit findings based on depth
+        max_findings = {'shallow': 2, 'medium': 4, 'deep': 8}.get(depth, 4)
+        return findings[:max_findings]
+    
+    def _classify_content_type(self, url: str, content: str) -> str:
+        """Classify the type of content based on URL and content analysis."""
+        url_lower = url.lower()
+        content_lower = content.lower()
+        
+        if 'wikipedia.org' in url_lower:
+            return 'encyclopedia'
+        elif 'arxiv.org' in url_lower or 'scholar.google' in url_lower:
+            return 'academic'
+        elif any(term in url_lower for term in ['news', 'reuters', 'bloomberg', 'bbc']):
+            return 'news'
+        elif 'blog' in url_lower or 'medium.com' in url_lower:
+            return 'blog'
+        elif any(term in content_lower for term in ['research', 'study', 'analysis']):
+            return 'research'
+        elif 'github.com' in url_lower or 'docs.' in url_lower:
+            return 'documentation'
         else:
-            # Generic findings for other topics
-            key_findings = [
-                f"Current developments in {args.query} show significant growth and innovation",
-                f"Industry experts highlight the importance of {args.query} in future planning",
-                f"Recent studies on {args.query} reveal new insights and opportunities",
-                f"Market trends indicate increased investment and interest in {args.query}"
-            ]
-            sources = [
-                {"url": f"https://example.com/{args.query.replace(' ', '-')}-overview", "title": f"{args.query} Overview", "type": "article"},
-                {"url": f"https://example.com/{args.query.replace(' ', '-')}-trends", "title": f"{args.query} Trends", "type": "analysis"},
-                {"url": f"https://example.com/{args.query.replace(' ', '-')}-research", "title": f"{args.query} Research", "type": "research"},
-                {"url": f"https://example.com/{args.query.replace(' ', '-')}-market", "title": f"{args.query} Market Data", "type": "report"}
-            ]
-        
-        # Adjust findings based on research depth
-        if args.research_depth == "shallow":
-            key_findings = key_findings[:2]
-            sources = sources[:2]
-        elif args.research_depth == "deep":
-            # Add more detailed findings for deep research
-            key_findings.extend([
-                f"Detailed analysis of {args.query} reveals complex interdependencies",
-                f"Historical context shows {args.query} has evolved significantly over time",
-                f"Future projections for {args.query} indicate continued development"
-            ])
-            sources.extend([
-                {"url": f"https://example.com/{args.query.replace(' ', '-')}-history", "title": f"History of {args.query}", "type": "academic"},
-                {"url": f"https://example.com/{args.query.replace(' ', '-')}-future", "title": f"Future of {args.query}", "type": "forecast"}
-            ])
-        
-        # Limit by max_pages
-        sources = sources[:args.max_pages]
-        
-        return {
-            "query": args.query,
-            "pages_analyzed": len(sources),
-            "key_findings": key_findings,
-            "sources": sources,
-            "research_depth": args.research_depth,
-            "timestamp": datetime.now().isoformat()
-        }
+            return 'article'
     
     def _create_research_report(self, research_results: Dict[str, Any], args: FirecrawlResearchArgs) -> Optional[Artifact]:
         """

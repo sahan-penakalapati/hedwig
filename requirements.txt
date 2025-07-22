@@ -15,6 +15,21 @@ python-dotenv>=1.0.0
 # Phase 5 tool dependencies
 reportlab>=4.0.0  # For PDF generation
 
+# Real API integration dependencies
+# Web scraping and research
+firecrawl-py>=0.0.8  # Firecrawl API for intelligent web scraping
+requests>=2.31.0  # HTTP client for API calls
+
+# Browser automation
+playwright>=1.40.0  # Browser automation for BrowserTool
+
+# Search APIs
+httpx>=0.25.0  # Async HTTP client for Brave Search API
+
+# GUI Dependencies
+Pillow>=10.0.0  # Image processing for artifact previews
+matplotlib>=3.7.0  # Plotting for performance metrics
+
 # Optional dependencies for future phases
 # PyYAML>=6.0  # For YAML config files
 # streamlit>=1.28.0  # Alternative web-based GUI

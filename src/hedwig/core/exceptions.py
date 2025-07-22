@@ -152,6 +152,17 @@ class TimeoutError(HedwigError):
         )
 
 
+class LLMIntegrationError(HedwigError):
+    """Error raised when LLM integration fails."""
+    
+    def __init__(self, message: str, component: str, provider: str = None):
+        super().__init__(
+            message,
+            ErrorCode.GENERAL_ERROR,  # Using general error, could add specific LLM error code
+            details={"component": component, "provider": provider}
+        )
+
+
 class ErrorHandler:
     """Utility class for consistent error handling across Hedwig components."""
     
