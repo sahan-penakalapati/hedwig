@@ -1,15 +1,16 @@
 # 🦉 Hedwig AI - Multi-Agent Desktop Assistant
 
-Hedwig is a comprehensive desktop application that orchestrates specialist AI agents to handle various tasks including document generation, web research, code creation, and terminal automation. Built with a modern GUI and powered by real API integrations.
+Hedwig is a comprehensive AI assistant that orchestrates specialist agents to handle diverse tasks including document generation, web research, code creation, and terminal automation. Available as both a modern desktop GUI and full-featured command-line interface.
 
 ## 🚀 **Current Status: Production Ready**
 
-Hedwig is a fully functional desktop application with:
-- **Modern GUI** with dark/light themes
-- **Multi-agent system** with intelligent task routing  
-- **Real API integrations** (OpenAI, Firecrawl, Playwright, Brave Search)
-- **Comprehensive tool suite** for diverse tasks
-- **Professional user experience** with chat interface and artifact management
+Hedwig is a complete AI assistant system with:
+- **🖥️ Modern Desktop GUI** with professional dark/light theming
+- **⌨️ Full-featured CLI** with identical AI capabilities
+- **🤖 Multi-agent system** with intelligent task routing to specialists
+- **🌐 Real API integrations** (OpenAI, Firecrawl, Playwright, Brave Search)
+- **🛠️ Comprehensive tool suite** covering document creation to code execution
+- **💼 Professional user experience** with persistent conversations and artifact management
 
 ---
 
@@ -59,11 +60,14 @@ cp .env.template .env
 
 ### **Launch**
 ```bash
-# Start Desktop GUI (Recommended)
+# Desktop GUI (Recommended for visual experience)
 ./venv/bin/python launch_gui.py
 
-# Or use CLI mode
+# Command Line Interface (Full AI capabilities)
 ./venv/bin/python -m hedwig.cli chat
+
+# Continue existing CLI conversation
+./venv/bin/python -m hedwig.cli chat --thread-id <thread-uuid>
 ```
 
 ---
@@ -87,11 +91,18 @@ cp .env.template .env
 - **File Operations**: Read, write, and manage files and artifacts
 
 #### **Modern Desktop GUI**
-- **Chat Interface**: Rich messaging with syntax highlighting and history
-- **Artifact Browser**: Visual file management with preview capabilities
-- **Settings Management**: Comprehensive configuration interface
+- **Chat Interface**: Rich messaging with syntax highlighting and persistent history
+- **Artifact Browser**: Visual file management with preview capabilities  
+- **Settings Management**: Comprehensive configuration with secure API key storage
 - **Theme System**: Professional dark/light themes with instant switching
-- **Status Monitoring**: Real-time progress and connection status
+- **Status Monitoring**: Real-time progress indicators and connection status
+
+#### **Full-Featured CLI**
+- **Interactive Chat**: Complete AI agent processing with persistent conversations
+- **Thread Management**: Resume previous conversations with unique thread IDs
+- **Command System**: Built-in commands (`help`, `threads`, `status`, `clear`)
+- **Artifact Display**: Shows generated files with paths and types
+- **Professional Interface**: Rich CLI experience with emojis and status indicators
 
 ### 🔐 **Security & Safety**
 - **Risk-Based Security**: Tools classified by risk level (READ_ONLY → WRITE → EXECUTE → DESTRUCTIVE)
@@ -212,18 +223,21 @@ nano .env  # or your preferred editor
 
 #### **4. First Launch**
 ```bash
-# Test basic functionality
-./venv/bin/python tests/integration/test_setup.py
-
-# Launch GUI application
+# Launch Desktop GUI
 ./venv/bin/python launch_gui.py
+
+# Or start CLI interface  
+./venv/bin/python -m hedwig.cli chat
+
+# Verify installation (optional)
+./venv/bin/python -c "from hedwig.app import HedwigApp; app = HedwigApp(); print('✅ Hedwig ready!')"
 ```
 
 ---
 
 ## 📚 **Usage Guide**
 
-### **Desktop GUI Usage**
+### **🖥️ Desktop GUI Usage**
 
 #### **Starting the Application**
 ```bash
@@ -255,11 +269,41 @@ nano .env  # or your preferred editor
 - **Tool Settings**: Browser options, PDF preferences
 - **UI Settings**: Theme selection, logging level, data directory
 
-### **Command Line Usage**
+### **⌨️ Command Line Interface Usage**
 
-#### **Interactive CLI**
+#### **Starting CLI Chat**
 ```bash
+# New conversation
 ./venv/bin/python -m hedwig.cli chat
+
+# Continue existing thread
+./venv/bin/python -m hedwig.cli chat --thread-id <uuid>
+```
+
+#### **CLI Commands**
+```bash
+# Built-in commands (type during chat)
+help      # Show available commands and tips
+threads   # List all conversation threads  
+status    # Show system status and statistics
+clear     # Clear screen (preserves conversation)
+exit      # End session (saves conversation)
+```
+
+#### **CLI Features**
+- **🤖 Full AI Processing**: Same agent system as GUI
+- **💬 Rich Chat Experience**: Emojis, formatting, and progress indicators  
+- **📁 Artifact Notifications**: Real-time file generation alerts
+- **🔄 Thread Continuity**: Resume conversations across sessions
+- **⚡ Interrupt Handling**: Ctrl+C for safe operation cancellation
+
+#### **Additional CLI Commands**
+```bash
+# Management commands (run outside of chat)
+./venv/bin/python -m hedwig.cli threads    # List all conversation threads
+./venv/bin/python -m hedwig.cli init       # Initialize new configuration  
+./venv/bin/python -m hedwig.cli cleanup    # Clean up old data
+./venv/bin/python -m hedwig.cli --help     # Show all available commands
 ```
 
 #### **Direct Python Integration**
@@ -280,33 +324,39 @@ for artifact in result.metadata.get('artifacts', []):
 
 ### **Common Use Cases**
 
-#### **Document Generation**
-```
+#### **📄 Document Generation**
+```bash
+# GUI or CLI - both interfaces support identical capabilities
 "Generate a professional PDF report about artificial intelligence trends in 2024"
-"Create a markdown documentation file for this Python project"
+"Create a markdown documentation file for this Python project"  
 "Write a technical specification document for a web API"
 ```
 
-#### **Web Research**
-```
+#### **🔍 Web Research**
+```bash
 "Research the latest developments in quantum computing and create a summary report"
 "Find information about electric vehicle market trends and compile key findings"
 "Investigate best practices for cybersecurity in small businesses"
 ```
 
-#### **Code Development**
-```
+#### **💻 Code Development**
+```bash
 "Write a Python script to analyze CSV data and generate charts"
 "Create a web scraper for product information from e-commerce sites"
 "Debug this JavaScript function and suggest improvements"
 ```
 
-#### **Data Analysis**
-```
+#### **📊 Data Analysis**
+```bash
 "Analyze this dataset and create visualizations showing key trends"
 "Process this log file and identify error patterns"
 "Generate a statistical report from survey data"
 ```
+
+#### **🖥️ Interface Choice**
+- **Desktop GUI**: Best for visual file management, settings configuration, and extended sessions
+- **Command Line**: Perfect for automation, scripting, server environments, and quick tasks
+- **Both interfaces**: Provide identical AI agent capabilities and persistent conversation history
 
 ---
 
@@ -577,6 +627,18 @@ python -c "import tkinter; print('Tkinter available')"
 sudo apt-get install python3-tk
 ```
 
+#### **CLI integration issues**
+```bash
+# Test CLI can initialize agent system
+./venv/bin/python -c "from hedwig.app import HedwigApp; app = HedwigApp(); print('✅ CLI ready')"
+
+# Test CLI basic functionality
+echo "status" | ./venv/bin/python -m hedwig.cli chat
+
+# Check CLI help
+./venv/bin/python -m hedwig.cli --help
+```
+
 #### **Browser automation fails**
 ```bash
 # Install/reinstall Playwright browsers
@@ -621,6 +683,23 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ---
 
-**🦉 Hedwig AI - Intelligent Multi-Agent Desktop Assistant**
+## 🎯 **Choose Your Interface**
 
-*Transform your workflow with AI-powered automation, research, and content generation.*
+Hedwig provides **two complete interfaces** with identical AI capabilities:
+
+| Interface | Best For | Key Features |
+|-----------|----------|--------------|
+| **🖥️ Desktop GUI** | Visual users, settings management, extended sessions | Modern theming, artifact browser, visual file preview |
+| **⌨️ Command Line** | Automation, scripting, servers, quick tasks | Full agent integration, thread management, rich CLI experience |
+
+Both interfaces provide:
+- ✅ **Complete AI agent system** with intelligent task routing
+- ✅ **Persistent conversation history** with thread management  
+- ✅ **Real-time artifact generation** and notifications
+- ✅ **Professional user experience** with status indicators
+
+---
+
+**🦉 Hedwig AI - Intelligent Multi-Agent Assistant**
+
+*Transform your workflow with AI-powered automation, research, and content generation - available as desktop GUI or command-line interface.*

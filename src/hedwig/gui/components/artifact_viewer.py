@@ -97,7 +97,7 @@ class ArtifactViewer(tk.Frame):
         
         # Search entry
         self.search_var = tk.StringVar()
-        self.search_var.trace("w", self.on_search_change)
+        self.search_var.trace_add("write", self.on_search_change)
         
         search_frame = tk.Frame(header_frame)
         search_frame.grid(row=0, column=1, sticky=tk.E, padx=(10, 0))

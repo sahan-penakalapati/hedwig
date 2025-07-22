@@ -27,13 +27,14 @@ class BaseAgent(ABC):
     - Standard error handling with TaskOutput conversion
     """
     
-    def __init__(self, name: str = None):
+    def __init__(self, name: str = None, **kwargs):
         """
         Initialize the agent.
         
         Args:
             name: Optional custom name for the agent. If not provided,
                   uses the class name converted to snake_case.
+            **kwargs: Additional keyword arguments for subclass initialization
         """
         self.name = name or self._generate_agent_name()
         self.logger = get_logger(f"hedwig.agents.{self.name}")

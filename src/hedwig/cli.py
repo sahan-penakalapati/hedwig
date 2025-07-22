@@ -59,79 +59,149 @@ HEDWIG_LOG_LEVEL=INFO
 def cmd_chat(args):
     """Start an interactive chat session."""
     config = setup_hedwig()
-    persistence = ThreadPersistence(config.get_data_dir())
     
-    # Load or create thread
+    # Initialize HedwigApp for agent processing
+    try:
+        from hedwig.app import HedwigApp
+        hedwig_app = HedwigApp()
+        print("🦉 Hedwig AI Agent System initialized")
+    except Exception as e:
+        print(f"❌ Failed to initialize Hedwig agent system: {e}")
+        print("Make sure all dependencies are installed and API keys are configured in .env")
+        return 1
+    
+    # Determine thread ID
+    thread_id = None
     if args.thread_id:
         from uuid import UUID
-        thread_id = UUID(args.thread_id)
         try:
-            thread, artifact_registry = persistence.load_thread(thread_id)
-            print(f"Loaded existing thread: {thread_id}")
-        except Exception as e:
-            print(f"Error loading thread: {e}")
+            thread_id = UUID(args.thread_id)
+            print(f"📂 Using existing thread: {thread_id}")
+        except ValueError:
+            print(f"❌ Invalid thread ID format: {args.thread_id}")
             return 1
     else:
-        thread_id = uuid4()
-        thread = ChatThread(thread_id=thread_id)
-        from hedwig.core.artifact_registry import ArtifactRegistry
-        artifact_registry = ArtifactRegistry(thread_id)
-        print(f"Created new thread: {thread_id}")
+        print("📝 Creating new conversation thread")
     
-    print("Hedwig CLI Chat Interface")
-    print("Type 'exit' to quit, 'help' for commands")
-    print("-" * 50)
-    
-    # Display conversation history
-    for message in thread.messages:
-        print(f"{message.role}: {message.content}")
+    print("\n" + "=" * 60)
+    print("🦉 HEDWIG CLI CHAT INTERFACE")
+    print("=" * 60)
+    print("Commands:")
+    print("  • Type your message and press Enter")
+    print("  • 'exit' or 'quit' to end session")
+    print("  • 'help' for more commands")
+    print("  • 'threads' to list all conversations")
+    print("-" * 60)
     
     while True:
         try:
-            user_input = input("\nYou: ").strip()
+            user_input = input("\n🧑 You: ").strip()
             
             if user_input.lower() in ['exit', 'quit']:
+                print("👋 Goodbye! Your conversation has been saved.")
                 break
+                
             elif user_input.lower() == 'help':
                 print("""
-Available commands:
-- exit/quit: Exit the chat
-- help: Show this help
-- artifacts: List current artifacts
-- threads: List all threads
-- Any other input will be processed as a chat message
+🔧 Available CLI Commands:
+  • exit/quit     - End the chat session
+  • help          - Show this help message
+  • threads       - List all conversation threads
+  • clear         - Clear screen (conversation history preserved)
+  • status        - Show system status
+  
+💡 Tips:
+  • All messages are processed by Hedwig's AI agent system
+  • Generated files are saved in the artifacts/ directory
+  • Conversation history is automatically preserved
+  • Use Ctrl+C to interrupt long-running operations
 """)
                 continue
-            elif user_input.lower() == 'artifacts':
-                print(artifact_registry.get_artifacts_summary())
-                continue
+                
             elif user_input.lower() == 'threads':
-                threads = persistence.list_threads()
-                print(f"\nAvailable threads ({len(threads)}):")
-                for t in threads[:10]:  # Show last 10
-                    print(f"  {t['thread_id']}: {t['message_count']} messages, updated {t['updated_at']}")
+                # Get thread information from HedwigApp
+                try:
+                    threads_dir = hedwig_app.threads_dir
+                    thread_dirs = [d for d in threads_dir.iterdir() if d.is_dir()]
+                    
+                    if not thread_dirs:
+                        print("📭 No conversation threads found.")
+                    else:
+                        print(f"📚 Found {len(thread_dirs)} conversation threads:")
+                        for i, thread_dir in enumerate(sorted(thread_dirs)[-10:], 1):  # Show last 10
+                            thread_id = thread_dir.name
+                            thread_file = thread_dir / "thread.json"
+                            if thread_file.exists():
+                                try:
+                                    import json
+                                    with open(thread_file, 'r') as f:
+                                        data = json.load(f)
+                                    msg_count = len(data.get('messages', []))
+                                    created = data.get('created_at', 'Unknown')[:16]  # Show date only
+                                    print(f"  {i:2}. {thread_id} ({msg_count} messages, {created})")
+                                except:
+                                    print(f"  {i:2}. {thread_id} (metadata unavailable)")
+                            else:
+                                print(f"  {i:2}. {thread_id} (no data)")
+                        
+                        print("\n💡 To continue a specific thread, restart with: hedwig chat --thread-id <ID>")
+                except Exception as e:
+                    print(f"❌ Error listing threads: {e}")
                 continue
+                
+            elif user_input.lower() == 'clear':
+                os.system('clear' if os.name == 'posix' else 'cls')
+                print("🦉 Hedwig CLI - Screen cleared (conversation history preserved)")
+                continue
+                
+            elif user_input.lower() == 'status':
+                print("🔍 Hedwig System Status:")
+                print(f"  • Agent System: ✅ Active")
+                print(f"  • Thread ID: {hedwig_app.current_thread.thread_id if hedwig_app.current_thread else 'New session'}")
+                print(f"  • Data Directory: {hedwig_app.threads_dir}")
+                print(f"  • Session Stats: {hedwig_app.session_stats}")
+                continue
+                
             elif not user_input:
                 continue
             
-            # Add user message to thread
-            thread.add_message("user", user_input)
+            # Process message with Hedwig agent system
+            print("🤖 Processing with AI agents...")
             
-            # TODO: Process with agent system when implemented
-            # For now, just echo back
-            response = f"Echo: {user_input} (Agent system not yet implemented)"
-            thread.add_message("assistant", response)
-            
-            print(f"Assistant: {response}")
-            
-            # Save thread
-            persistence.save_thread(thread, artifact_registry)
+            try:
+                result = hedwig_app.run(user_input, thread_id)
+                
+                if result.success:
+                    print(f"🦉 Assistant: {result.content}")
+                    
+                    # Show artifacts if any were generated
+                    artifacts = result.metadata.get('artifacts', []) if result.metadata else []
+                    if artifacts:
+                        print(f"\n📁 Generated {len(artifacts)} file(s):")
+                        for artifact in artifacts:
+                            print(f"   • {artifact.file_path} ({artifact.artifact_type})")
+                else:
+                    print(f"❌ Error: {result.error}")
+                    if result.error_code:
+                        print(f"   Error Code: {result.error_code}")
+                    
+            except KeyboardInterrupt:
+                print("\n⏹️  Operation interrupted by user")
+                continue
+            except Exception as e:
+                print(f"❌ Unexpected error: {e}")
+                print("💡 Try 'status' to check system state or 'help' for commands")
+                continue
             
         except KeyboardInterrupt:
-            print("\nGoodbye!")
+            print("\n\n👋 Session ended. Your conversation has been saved.")
+            break
+        except EOFError:
+            print("\n👋 Session ended.")
             break
         except Exception as e:
-            print(f"Error: {e}")
+            print(f"❌ CLI Error: {e}")
+            print("💡 Type 'help' for available commands")
     
     return 0
 
