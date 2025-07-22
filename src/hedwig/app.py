@@ -30,6 +30,8 @@ from hedwig.core.models import (
 )
 from hedwig.agents.dispatcher import DispatcherAgent
 from hedwig.agents.general import GeneralAgent
+from hedwig.agents.swe import SWEAgent
+from hedwig.agents.research import ResearchAgent
 from hedwig.agents.executor import AgentExecutor
 from hedwig.tools.registry import ToolRegistry
 from hedwig.tools.security import SecurityGateway
@@ -131,12 +133,10 @@ class HedwigApp:
         """Initialize the agent system with dispatcher and specialists."""
         # Create specialist agents
         general_agent = GeneralAgent(agent_executor=self.agent_executor)
+        swe_agent = SWEAgent(agent_executor=self.agent_executor)
+        research_agent = ResearchAgent(agent_executor=self.agent_executor)
         
-        # TODO: Add more specialist agents as they are implemented
-        # swe_agent = SWEAgent(agent_executor=self.agent_executor)
-        # research_agent = ResearchAgent(agent_executor=self.agent_executor)
-        
-        specialist_agents = [general_agent]
+        specialist_agents = [general_agent, swe_agent, research_agent]
         
         # Create dispatcher agent
         self.dispatcher = DispatcherAgent(

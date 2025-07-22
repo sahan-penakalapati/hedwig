@@ -10,6 +10,8 @@ from hedwig.tools.markdown_generator import MarkdownGeneratorTool
 from hedwig.tools.code_generator import CodeGeneratorTool
 from hedwig.tools.python_execute import PythonExecuteTool
 from hedwig.tools.bash_tool import BashTool
+from hedwig.tools.firecrawl_research import FirecrawlResearchTool
+from hedwig.tools.browser_tool import BrowserTool
 
 __all__ = [
     # Core tool infrastructure
@@ -34,6 +36,10 @@ __all__ = [
     
     # System tools
     "BashTool",
+    
+    # Research tools
+    "FirecrawlResearchTool",
+    "BrowserTool",
 ]
 
 
@@ -58,3 +64,7 @@ def register_all_tools():
     
     # Register system tools
     register_tool(BashTool())
+    
+    # Register research tools
+    register_tool(FirecrawlResearchTool())
+    register_tool(BrowserTool())

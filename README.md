@@ -4,7 +4,7 @@ Hedwig is a local desktop application that orchestrates specialist agents to han
 
 ## 🚧 Development Status
 
-**Current Phase: Phase 5 - Tool Expansion (COMPLETED)**
+**Current Phase: Phase 6 - Specialized Agents (COMPLETED)**
 
 ### ✅ Completed Features
 
@@ -44,12 +44,21 @@ Hedwig is a local desktop application that orchestrates specialist agents to han
 - **Dynamic Risk Assessment**: Enhanced SecurityGateway with command-specific risk analysis
 - **Comprehensive Testing**: Full test coverage for all Phase 5 tools
 
-### 🏗️ Next Phase: Phase 6 - Specialized Agents
+#### Phase 6: Specialized Agents
+- **SWEAgent**: Software engineering specialist for code development, debugging, and refactoring
+- **ResearchAgent**: Research specialist for information gathering and report generation
+- **Enhanced Dispatching**: Structured agent descriptions for intelligent task routing
+- **Research Tools**: FirecrawlResearchTool and BrowserTool for web research and automation
+- **Agent Integration**: Full integration of specialized agents with HedwigApp
+- **Comprehensive Testing**: Full test coverage for specialized agents and routing logic
+
+### 🏗️ Next Phase: Phase 7 - GUI and Polish
 
 Upcoming features:
-- SWEAgent for software development tasks
-- ResearchAgent for web research and data gathering  
-- Enhanced agent descriptions and routing logic
+- Desktop GUI application with modern interface
+- Enhanced web research integration with real APIs
+- Performance optimizations and monitoring
+- Advanced artifact visualization and management
 
 ## 📁 Project Structure
 
@@ -211,10 +220,11 @@ Hedwig implements a multi-tiered security approach:
 - [x] Code generation and execution tools
 - [x] Enhanced security features with dynamic risk assessment
 
-### Phase 6: Specialized Agents
-- [ ] SWEAgent for software development
-- [ ] ResearchAgent for web research
-- [ ] Additional domain specialists
+### Phase 6: Specialized Agents ✅
+- [x] SWEAgent for software development tasks
+- [x] ResearchAgent for web research and data gathering
+- [x] Enhanced agent descriptions and routing logic
+- [x] Research tools (FirecrawlResearchTool, BrowserTool)
 
 ### Phase 7: GUI and Polish
 - [ ] Desktop GUI application
